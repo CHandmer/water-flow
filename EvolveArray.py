@@ -25,11 +25,14 @@ gratextents = [4,8]
 
 timestep = 0.1
 
+precip = 0*0.0015*gratextents[0]*res/720
+
 import numpy as np
 
 # Create ghost zone arrays. EW, NS, old and new. Contain only depth information.
 # Each graticule has a one element ghost zone. So the ghost zone for NS work must be 2*gratextents[0] x res*gratextents[1] and EW must be gratextents[0]*res x 2*gratextents[1]
 # It doesn't need to include the diagonals because they're irrelevant for the algo.
+# Note to self: This would have been much easier to implement as methods on a class. Live and learn. 
 ghostNSold = np.zeros([2*gratextents[0],res*gratextents[1]])
 ghostNSnew = np.zeros([2*gratextents[0],res*gratextents[1]])
 ghostEWold = np.zeros([res*gratextents[0],2*gratextents[1]])
@@ -160,3 +163,6 @@ for latindex in range(gratextents[0]):
         ghostNSnew[2*latindex,res*lonindex:res*(lonindex+1)] = graticule_space[1,1:-1,2]
         ghostNSnew[1+2*latindex,res*lonindex:res*(lonindex+1)] = graticule_space[-2,1:-1,2]
 
+# Implement rain, make proportional to res.
+
+# Measure total flow
