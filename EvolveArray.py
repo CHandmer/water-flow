@@ -27,6 +27,9 @@ timestep = 0.1
 
 precip = 0*0.0015*gratextents[0]*res/720
 
+reset_depths = False
+GED = 150
+
 import numpy as np
 
 # Create ghost zone arrays. EW, NS, old and new. Contain only depth information.
@@ -60,20 +63,42 @@ graticule_space = np.zeros([res+2,res+2,6])
 
 # In each cycle, it will read remote ghost zones, then write local ones. It's a beautiful thing. 
 
-
+# minalt allows the precipitation algorithm to normalize for heights. 
+# 
+minalt = 0
+totalalts = 0
 for latindex in range(gratextents[0]):
     for lonindex in range(gratextents[1]):
         graticule_space = np.load(inputpath+"/test"+str(latindex)+str(lonindex)+".npy")
+        if reset_depths:
+            graticule_space[:,:,2] *= 0
+            graticule_space[:,:,2] += GED
         ghostNSnew[2*latindex,res*lonindex:res*(lonindex+1)] = graticule_space[1,1:-1,2]
         ghostNSnew[1+2*latindex,res*lonindex:res*(lonindex+1)] = graticule_space[-2,1:-1,2]
         ghostEWnew[res*latindex:res*(latindex+1),2*lonindex] = graticule_space[1:-1,1,2]
         ghostEWnew[res*latindex:res*(latindex+1),1+2*lonindex] = graticule_space[1:-1,-2,2]
+
+        # set minalt
+        minalt = np.min([np.min(graticule_space[:,:,0]),minalt])
+        totalalts += np.sum(graticule_space[1:-1,1:-1,0])
+
+# rescale to set the minimum altitude to "0"
+totalalts += -res*res*gratextents[0]*gratextents[1]*minalt
+
+# This is an array of numbers representing the total flow within the system. As a measure of convergence.
+total_flow = []
 
 #loop time steps
 # for i in range(millions):
 
 # refresh ghost zones (begin the new time step with fresh space for old ghost zones)
 ghostEWold = ghostEWnew
+
+# refresh total evaporation to zero
+total_evap = 0
+
+# add a new term to total flow. At this point, doing EW and NS flows separately. 
+total_flow.append(0)
 
 # loop over graticules
 for latindex in range(gratextents[0]):
@@ -101,27 +126,38 @@ for latindex in range(gratextents[0]):
 
         # update depth, including a metric term that converts flows to volumes, scaled by latitude.
         graticule_space[:,1:-1,2] += graticule_space[:,1:-1,7]*(graticule_space[:,1:-1,5] - graticule_space[:,:-2,5] + graticule_space[:,1:-1,6] - graticule_space[:,:-2,6])*graticule_space[:,1:-1,1]
+        total_flow[-1] += np.sum(np.abs(graticule_space[:,1:-1,7]*(graticule_space[:,1:-1,5] - graticule_space[:,:-2,5] + graticule_space[:,1:-1,6] - graticule_space[:,:-2,6])*graticule_space[:,1:-1,1]))
 
-# Note to self. Imagine an array like 
-# 0 0 1 0 0 0
-# Diff looks like
-# 0 1 -1 0 0 
-# Compute norm fraction for central 4
-# Diff+[:-1] - Diff-[1:]
-# Compute fate for central 4
-# (Diff+[1:] - Diff+[:-1] + Diff-[1:] - Diff-[:-1]) * norm
+        # Note to self. Imagine an array like 
+        # 0 0 1 0 0 0
+        # Diff looks like
+        # 0 1 -1 0 0 
+        # Compute norm fraction for central 4
+        # Diff+[:-1] - Diff-[1:]
+        # Compute fate for central 4
+        # (Diff+[1:] - Diff+[:-1] + Diff-[1:] - Diff-[:-1]) * norm
 
-        # save graticule
-        #np.save(inputpath+"/test"+str(latindex)+str(lonindex),graticule_space)
+        # Determine correct evaporation level. Reusing layer 5 of graticule array.
+        graticule_space[1:-1,1:-1,5] = np.minimum(graticule_space[1:-1,1:-1,2],precip)
+        # Evaporate
+        graticule_space[1:-1,1:-1,2] -= graticule_space[1:-1,1:-1,5]
+        # Compute total volume by including metric
+        total_evap += np.sum(graticule_space[1:-1,1:-1,5]*graticule_space[1:-1,1:-1,1])
 
         # update ghost zones (new)
         ghostEWnew[res*latindex:res*(latindex+1),2*lonindex] = graticule_space[1:-1,1,2]
         ghostEWnew[res*latindex:res*(latindex+1),1+2*lonindex] = graticule_space[1:-1,-2,2]
 
+        # save graticule
+        #np.save(inputpath+"/test"+str(latindex)+str(lonindex),graticule_space)
+
+
 
 # Do the same for NS
 # Cycle ghostzone. I hope this is assignation, not binding.
 ghostNSold = ghostNSnew
+
+total_flow.append[0]
 
 # loop over graticules
 for latindex in range(gratextents[0]):
@@ -140,6 +176,9 @@ for latindex in range(gratextents[0]):
         else:
             graticule_space[-1,1:-1,2] = ghostNSold[2*latindex+2,res*lonindex:res*(lonindex+1)]
         
+        # Rain including metric
+        graticule_space[1:-1,1:-1,2] += total_evap*graticule_space[1:-1,1:-1,0]/(totalalts*graticule_space[1:-1,1:-1,1])
+
         # Compute flow for NS in place
         graticule_space[:-1,:,4] = timestep*np.diff(graticule_space[:,:,0] + graticule_space[:,:,2], axis = 0)
 
@@ -155,14 +194,14 @@ for latindex in range(gratextents[0]):
 
         # update depth, including a metric term that converts flows to volumes, scaled by latitude.
         graticule_space[1:-1,:,2] += graticule_space[1:-1,:,7]*(graticule_space[1:-1,:,5] - graticule_space[:-2,:,5] + graticule_space[1:-1,:,6] - graticule_space[:-2,:,6])*graticule_space[1:-1,:,1]
-
-        # save graticule
-        #np.save(inputpath+"/test"+str(latindex)+str(lonindex),graticule_space)
+        total_flow[-1] += np.sum(np.abs(graticule_space[1:-1,:,7]*(graticule_space[1:-1,:,5] - graticule_space[:-2,:,5] + graticule_space[1:-1,:,6] - graticule_space[:-2,:,6])*graticule_space[1:-1,:,1]))
 
         # update ghost zones (new)
         ghostNSnew[2*latindex,res*lonindex:res*(lonindex+1)] = graticule_space[1,1:-1,2]
         ghostNSnew[1+2*latindex,res*lonindex:res*(lonindex+1)] = graticule_space[-2,1:-1,2]
 
-# Implement rain, make proportional to res.
+        # save graticule
+        #np.save(inputpath+"/test"+str(latindex)+str(lonindex),graticule_space)
 
-# Measure total flow
+print(total_flow)
+

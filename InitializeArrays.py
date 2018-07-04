@@ -6,7 +6,7 @@
 # - initial depth (initialize at constant GEL, or interpolate/decimate from other file)
 # - flow EW
 # - flow NS (strictly this is redundant but is a useful piece of data for plotting etc)
-# - positive flow
+# - positive flow, other temp space
 # - negative flow
 # - norm
 
