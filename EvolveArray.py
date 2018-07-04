@@ -21,37 +21,119 @@ thisdir = "/home/handmer/Documents/Mars/water-flow/"
 
 inputpath = thisdir + "res"+str(res)+"/"
 
+gratextents = [4,8]
+
+timestep = 0.1
 
 import numpy as np
 
 # Create ghost zone arrays. EW, NS, old and new. Contain only depth information.
+# Each graticule has a one element ghost zone. So the ghost zone for NS work must be 2*gratextents[0] x res*gratextents[1] and EW must be gratextents[0]*res x 2*gratextents[1]
+# It doesn't need to include the diagonals because they're irrelevant for the algo.
+ghostNSold = np.zeros([2*gratextents[0],res*gratextents[1]])
+ghostNSnew = np.zeros([2*gratextents[0],res*gratextents[1]])
+ghostEWold = np.zeros([res*gratextents[0],2*gratextents[1]])
+ghostEWnew = np.zeros([res*gratextents[0],2*gratextents[1]])
 
 # Allocate graticule memory
+# Mola, metric, depth, flowEW, flowNS, spare
+graticule_space = np.zeros([res+2,res+2,6])
+
+# Fill in ghost zone depth numbers (initialization)
+# This particular memory mapping actually locally inverts the orders of the ghost zones on the short axis, but it helps with indexing consistently. Just do it the same as here and all will be okay.
+for latindex in range(gratextents[0]):
+    for lonindex in range(gratextents[1]):
+        graticule_space = np.load(outputpath+"/test"+str(latindex)+str(lonindex)+".npy")
+        ghostNSnew[2*latindex,res*lonindex:res*(lonindex+1)] = graticule_space[0,1:-1,2]
+        ghostNSnew[1+2*latindex,res*lonindex:res*(lonindex+1)] = graticule_space[-1,1:-1,2]
+        ghostEWnew[res*latindex:res*(latindex+1),2*lonindex] = graticule_space[1:-1,0,2]
+        ghostEWnew[res*latindex:res*(latindex+1),1+2*lonindex] = graticule_space[1:-1,-1,2]
 
 #loop time steps
+# for i in range(millions):
 
-# refresh ghost zones
+# refresh ghost zones (begin the new time step with fresh space for old ghost zones)
+ghostEWold = ghostEWnew
 
 # loop over graticules
+for latindex in range(gratextents[0]):
+    for lonindex in range(gratextents[1]):
+        # Load graticule
+        graticule_space = np.load(inputpath+"/test"+str(latindex)+str(lonindex)+".npy")
 
-# load graticule
-test = np.load(inputpath+"test00.npy")
+        # update ghost zones from old ghost zone 
+        # (which was the new ghost zone from the previous time step)
+        graticule_space[1:-1,0,2] = ghostEWold[res*latindex:res*(latindex+1),2*lonindex]
+        graticule_space[1:-1,-1,2] = ghostEWold[res*latindex:res*(latindex+1),1+2*lonindex]
+        
+        # Compute flow for EW in place
+        graticule_space[:,:-1,3] = timestep*np.diff(graticule_space[:,:,0] + graticule_space[:,:,2], axis = 1)
 
-# update ghost zones from old ghost zone
+        # Update graticule depths
+        # This must be normalized by the existing depth, or depth will go negative. 
+        # Important to preserve conservatism.
+        # Compute positive flow (right to left)
+        graticule_space[:,:-1,5] = (0.5+0.5*np.sign(graticule_space[:,:-1,3]))*graticule_space[:,:-1,3] #positive, flows to the left, loss from right, add to left
+        # Compute negative flow (left to right)
+        graticule_space[:,:-1,6] = (0.5-0.5*np.sign(graticule_space[:,:-1,3]))*graticule_space[:,:-1,3] #negative, flows to the right, loss from left, add to right
+        # Compute norm
+        graticule_space[:,1:-1,7] = np.minimum(graticule_space[:,1:-1,2]/(10**-8 + graticule_space[:,:-2,5] - graticule_space[:,1:-1,6]),1.0)
 
-# Compute flow for EW in place
+        # update depth, including a metric term that converts flows to volumes, scaled by latitude.
+        graticule_space[:,1:-1,2] += graticule_space[:,1:-1,7]*(graticule_space[:,1:-1,5] - graticule_space[:,:-2,5] + graticule_space[:,1:-1,6] - graticule_space[:,:-2,6])*graticule_space[:,1:-1,1]
 
-# Update graticule depths
+# Note to self. Imagine an array like 
+# 0 0 1 0 0 0
+# Diff looks like
+# 0 1 -1 0 0 
+# Compute norm fraction for central 4
+# Diff+[:-1] - Diff-[1:]
+# Compute fate for central 4
+# (Diff+[1:] - Diff+[:-1] + Diff-[1:] - Diff-[:-1]) * norm
 
-# save graticule
+        # save graticule
+        #np.save(inputpath+"/test"+str(latindex)+str(lonindex),graticule_space)
 
-# update ghost zones (new)
+        # update ghost zones (new)
+        ghostEWnew[res*latindex:res*(latindex+1),2*lonindex] = graticule_space[1:-1,0,2]
+        ghostEWnew[res*latindex:res*(latindex+1),1+2*lonindex] = graticule_space[1:-1,-1,2]
+
 
 # Do the same for NS
+ghostNSold = ghostNSnew
 
+# loop over graticules
+for latindex in range(gratextents[0]):
+    for lonindex in range(gratextents[1]):
+        # Load graticule
+        graticule_space = np.load(inputpath+"/test"+str(latindex)+str(lonindex)+".npy")
 
+        # update ghost zones from old ghost zone 
+        # (which was the new ghost zone from the previous time step)
+        graticule_space[0,1:-1,2] = ghostNSold[2*latindex,res*lonindex:res*(lonindex+1)]
+        graticule_space[-1,1:-1,2] = ghostNSold[1+2*latindex,res*lonindex:res*(lonindex+1)]
+        
+        # Compute flow for NS in place
+        graticule_space[:-1,:,4] = timestep*np.diff(graticule_space[:,:,0] + graticule_space[:,:,2], axis = 0)
 
+        # Update graticule depths
+        # This must be normalized by the existing depth, or depth will go negative. 
+        # Important to preserve conservatism.
+        # Compute positive flow (right to left)
+        graticule_space[:-1,:,5] = (0.5+0.5*np.sign(graticule_space[:-1,:,4]))*graticule_space[:-1,:,4] #positive, flows to the left, loss from right, add to left
+        # Compute negative flow (left to right)
+        graticule_space[:-1,:,6] = (0.5-0.5*np.sign(graticule_space[:-1,:,4]))*graticule_space[:-1,:,4] #negative, flows to the right, loss from left, add to right
+        # Compute norm
+        graticule_space[1:-1,:,7] = np.minimum(graticule_space[1:-1,:,2]/(10**-8 + graticule_space[:-2,:,5] - graticule_space[1:-1,:,6]),1.0)
 
+        # update depth, including a metric term that converts flows to volumes, scaled by latitude.
+        graticule_space[1:-1,:,2] += graticule_space[1:-1,:,7]*(graticule_space[1:-1,:,5] - graticule_space[:-2,:,5] + graticule_space[1:-1,:,6] - graticule_space[:-2,:,6])*graticule_space[1:-1,:,1]
 
+        # save graticule
+        #np.save(inputpath+"/test"+str(latindex)+str(lonindex),graticule_space)
 
-print(test[:,:,1])
+        # update ghost zones (new)
+        ghostNSnew[2*latindex,res*lonindex:res*(lonindex+1)] = graticule_space[0,1:-1,2]
+        ghostNSnew[1+2*latindex,res*lonindex:res*(lonindex+1)] = graticule_space[-1,1:-1,2]
+
+# This ghost zone addressing is NFG.

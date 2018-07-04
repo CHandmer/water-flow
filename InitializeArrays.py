@@ -6,6 +6,9 @@
 # - initial depth (initialize at constant GEL, or interpolate/decimate from other file)
 # - flow EW
 # - flow NS (strictly this is redundant but is a useful piece of data for plotting etc)
+# - positive flow
+# - negative flow
+# - norm
 
 # User set parameters
 skip = 2**7
@@ -24,7 +27,7 @@ gratextents = [4,8]
 # Initialize with global equivalent depth (GED) in meters
 GED = 150.
 
-# default order is latitude, longitude. Watch those square arrays!
+# default order is latitude (N->S), longitude. Watch those square arrays!
 #latindex = 0
 #lonindex = 0
 
@@ -33,7 +36,7 @@ import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
 
-output = np.zeros([res+2,res+2,6])
+output = np.zeros([res+2,res+2,8])
 
 for latindex in range(gratextents[0]):
     for lonindex in range(gratextents[1]):
