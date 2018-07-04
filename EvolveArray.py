@@ -40,12 +40,21 @@ ghostEWnew = np.zeros([res*gratextents[0],2*gratextents[1]])
 graticule_space = np.zeros([res+2,res+2,6])
 
 # Fill in ghost zone depth numbers (initialization)
-# This particular memory mapping actually locally inverts the orders of the ghost zones on the short axis, but it helps with indexing consistently. Just do it the same as here and all will be okay.
+# Imagine there are two domains, one next to the other, and not periodic boundaries (zero flow)
+# 1* 1 1 1 1 g1
+#          g2 2 2 2 2 2*
+# When domain 1 runs, it duplicates its first row to make 1*, then reads the first row of 2 to make g1. 
+# When it finishes, it writes its rightmost value to g2. So there's a "crossing of arms" between reading and writing. 
+# The only memory structure that will make any sense in the long term is one that is only ghost zones in the correct order.
+
+# For ghostNS, it only needs 6 rows, since the poles are redundant, but 8 rows simplifies addressing.
+# The 0th and 1st row are the interior 1 and -2th rows of domain latindex = 0, and so on .
+
 for latindex in range(gratextents[0]):
     for lonindex in range(gratextents[1]):
         graticule_space = np.load(outputpath+"/test"+str(latindex)+str(lonindex)+".npy")
-        ghostNSnew[2*latindex,res*lonindex:res*(lonindex+1)] = graticule_space[0,1:-1,2]
-        ghostNSnew[1+2*latindex,res*lonindex:res*(lonindex+1)] = graticule_space[-1,1:-1,2]
+        ghostNSnew[2*latindex,res*lonindex:res*(lonindex+1)] = graticule_space[1,1:-1,2]
+        ghostNSnew[1+2*latindex,res*lonindex:res*(lonindex+1)] = graticule_space[-2,1:-1,2]
         ghostEWnew[res*latindex:res*(latindex+1),2*lonindex] = graticule_space[1:-1,0,2]
         ghostEWnew[res*latindex:res*(latindex+1),1+2*lonindex] = graticule_space[1:-1,-1,2]
 
@@ -100,6 +109,7 @@ for latindex in range(gratextents[0]):
 
 
 # Do the same for NS
+# Cycle ghostzone. I hope this is assignation, not binding.
 ghostNSold = ghostNSnew
 
 # loop over graticules
@@ -110,8 +120,14 @@ for latindex in range(gratextents[0]):
 
         # update ghost zones from old ghost zone 
         # (which was the new ghost zone from the previous time step)
-        graticule_space[0,1:-1,2] = ghostNSold[2*latindex,res*lonindex:res*(lonindex+1)]
-        graticule_space[-1,1:-1,2] = ghostNSold[1+2*latindex,res*lonindex:res*(lonindex+1)]
+        if latindex == 0:
+            graticule_space[0,1:-1,2] = graticule_space[1,1:-1,2]
+        else:
+            graticule_space[0,1:-1,2] = ghostNSold[2*latindex-1,res*lonindex:res*(lonindex+1)]
+        if latindex == gratextents[0]:
+            graticule_space[-1,1:-1,2] = graticule_space[-2,1:-1,2]
+        else:
+            graticule_space[-1,1:-1,2] = ghostNSold[2*latindex+2,res*lonindex:res*(lonindex+1)]
         
         # Compute flow for NS in place
         graticule_space[:-1,:,4] = timestep*np.diff(graticule_space[:,:,0] + graticule_space[:,:,2], axis = 0)
@@ -133,7 +149,6 @@ for latindex in range(gratextents[0]):
         #np.save(inputpath+"/test"+str(latindex)+str(lonindex),graticule_space)
 
         # update ghost zones (new)
-        ghostNSnew[2*latindex,res*lonindex:res*(lonindex+1)] = graticule_space[0,1:-1,2]
-        ghostNSnew[1+2*latindex,res*lonindex:res*(lonindex+1)] = graticule_space[-1,1:-1,2]
+        ghostNSnew[2*latindex,res*lonindex:res*(lonindex+1)] = graticule_space[1,1:-1,2]
+        ghostNSnew[1+2*latindex,res*lonindex:res*(lonindex+1)] = graticule_space[-2,1:-1,2]
 
-# This ghost zone addressing is NFG.
