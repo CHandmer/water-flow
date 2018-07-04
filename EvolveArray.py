@@ -50,13 +50,21 @@ graticule_space = np.zeros([res+2,res+2,6])
 # For ghostNS, it only needs 6 rows, since the poles are redundant, but 8 rows simplifies addressing.
 # The 0th and 1st row are the interior 1 and -2th rows of domain latindex = 0, and so on .
 
+# Image four domains, next to each other, periodic boundaries
+# g1 1 1 1 1 g1     g3 3 3 3 3 g3     g1 1 1 1 1 g1
+#          g2 2 2 2 2 g2     g4 4 4 4 4 g4
+# Domain 1 reads 4 and 2 to get g1s, which requires some cyclic references. If the ghost zones are labeled in order, they are g4, g2, g1, g3, g2, g4, g3, g1, ...
+
+# In each cycle, it will read remote ghost zones, then write local ones. It's a beautiful thing. 
+
+
 for latindex in range(gratextents[0]):
     for lonindex in range(gratextents[1]):
         graticule_space = np.load(outputpath+"/test"+str(latindex)+str(lonindex)+".npy")
         ghostNSnew[2*latindex,res*lonindex:res*(lonindex+1)] = graticule_space[1,1:-1,2]
         ghostNSnew[1+2*latindex,res*lonindex:res*(lonindex+1)] = graticule_space[-2,1:-1,2]
-        ghostEWnew[res*latindex:res*(latindex+1),2*lonindex] = graticule_space[1:-1,0,2]
-        ghostEWnew[res*latindex:res*(latindex+1),1+2*lonindex] = graticule_space[1:-1,-1,2]
+        ghostEWnew[res*latindex:res*(latindex+1),2*lonindex] = graticule_space[1:-1,1,2]
+        ghostEWnew[res*latindex:res*(latindex+1),1+2*lonindex] = graticule_space[1:-1,-2,2]
 
 #loop time steps
 # for i in range(millions):
@@ -72,8 +80,8 @@ for latindex in range(gratextents[0]):
 
         # update ghost zones from old ghost zone 
         # (which was the new ghost zone from the previous time step)
-        graticule_space[1:-1,0,2] = ghostEWold[res*latindex:res*(latindex+1),2*lonindex]
-        graticule_space[1:-1,-1,2] = ghostEWold[res*latindex:res*(latindex+1),1+2*lonindex]
+        graticule_space[1:-1,0,2] = ghostEWold[res*latindex:res*(latindex+1),(2*lonindex-1)%gratextents[1]]
+        graticule_space[1:-1,-1,2] = ghostEWold[res*latindex:res*(latindex+1),(2*lonindex+2)%gratextents[1]]
         
         # Compute flow for EW in place
         graticule_space[:,:-1,3] = timestep*np.diff(graticule_space[:,:,0] + graticule_space[:,:,2], axis = 1)
@@ -104,8 +112,8 @@ for latindex in range(gratextents[0]):
         #np.save(inputpath+"/test"+str(latindex)+str(lonindex),graticule_space)
 
         # update ghost zones (new)
-        ghostEWnew[res*latindex:res*(latindex+1),2*lonindex] = graticule_space[1:-1,0,2]
-        ghostEWnew[res*latindex:res*(latindex+1),1+2*lonindex] = graticule_space[1:-1,-1,2]
+        ghostEWnew[res*latindex:res*(latindex+1),2*lonindex] = graticule_space[1:-1,1,2]
+        ghostEWnew[res*latindex:res*(latindex+1),1+2*lonindex] = graticule_space[1:-1,-2,2]
 
 
 # Do the same for NS
