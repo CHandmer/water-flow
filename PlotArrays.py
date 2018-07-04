@@ -24,3 +24,4 @@ for latindex in range(gratextents[0]):
         graticule_space = np.load(inputpath+"/test"+str(latindex)+str(lonindex)+".npy")
         graticule_space[5] = (graticule_space[3]**2+graticule_space[4]**2)**0.5
         plt.imshow(graticule_space[1:-1,1:-1,5])
+        plt.show()
