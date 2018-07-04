@@ -36,7 +36,7 @@ ghostEWold = np.zeros([res*gratextents[0],2*gratextents[1]])
 ghostEWnew = np.zeros([res*gratextents[0],2*gratextents[1]])
 
 # Allocate graticule memory
-# Mola, metric, depth, flowEW, flowNS, spare
+# Mola, metric, depth, flowEW, flowNS, positive flow, negative flow, norm
 graticule_space = np.zeros([res+2,res+2,6])
 
 # Fill in ghost zone depth numbers (initialization)
@@ -60,7 +60,7 @@ graticule_space = np.zeros([res+2,res+2,6])
 
 for latindex in range(gratextents[0]):
     for lonindex in range(gratextents[1]):
-        graticule_space = np.load(outputpath+"/test"+str(latindex)+str(lonindex)+".npy")
+        graticule_space = np.load(inputpath+"/test"+str(latindex)+str(lonindex)+".npy")
         ghostNSnew[2*latindex,res*lonindex:res*(lonindex+1)] = graticule_space[1,1:-1,2]
         ghostNSnew[1+2*latindex,res*lonindex:res*(lonindex+1)] = graticule_space[-2,1:-1,2]
         ghostEWnew[res*latindex:res*(latindex+1),2*lonindex] = graticule_space[1:-1,1,2]
@@ -132,7 +132,7 @@ for latindex in range(gratextents[0]):
             graticule_space[0,1:-1,2] = graticule_space[1,1:-1,2]
         else:
             graticule_space[0,1:-1,2] = ghostNSold[2*latindex-1,res*lonindex:res*(lonindex+1)]
-        if latindex == gratextents[0]:
+        if latindex == gratextents[0]-1:
             graticule_space[-1,1:-1,2] = graticule_space[-2,1:-1,2]
         else:
             graticule_space[-1,1:-1,2] = ghostNSold[2*latindex+2,res*lonindex:res*(lonindex+1)]

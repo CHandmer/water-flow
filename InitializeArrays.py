@@ -49,7 +49,7 @@ for latindex in range(gratextents[0]):
         for i in range(output.shape[1]-2):
             output[1:-1,i+1,1] = metricvalues
 
-        # Implement some interpolation - constant surface height scheme here.
+        # Implement some interpolation - constant surface height scheme here. Local tetration.
         output[:,:,2] += GED
 
         np.save(outputpath+"/test"+str(latindex)+str(lonindex),output)
