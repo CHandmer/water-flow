@@ -6,7 +6,7 @@ res = 45
 # Path to memory location for arrays of a particular resolution
 thisdir = "/home/handmer/Documents/Mars/water-flow/"
 
-inputpath = thisdir + "res"+str(res)+"/"
+inputpath = thisdir + "res"+str(res)+"/"#"-fresh/"
 
 gratextents = [4,8]
 

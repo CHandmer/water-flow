@@ -31,6 +31,7 @@ reset_depths = False
 GED = 150
 
 import numpy as np
+from matplotlib import pyplot as plt
 
 # Create ghost zone arrays. EW, NS, old and new. Contain only depth information.
 # Each graticule has a one element ghost zone. So the ghost zone for NS work must be 2*gratextents[0] x res*gratextents[1] and EW must be gratextents[0]*res x 2*gratextents[1]
@@ -89,119 +90,120 @@ totalalts += -res*res*gratextents[0]*gratextents[1]*minalt
 total_flow = []
 
 #loop time steps
-# for i in range(millions):
+for i in range(100):
 
-# refresh ghost zones (begin the new time step with fresh space for old ghost zones)
-ghostEWold = ghostEWnew
+    # refresh ghost zones (begin the new time step with fresh space for old ghost zones)
+    ghostEWold = ghostEWnew
 
-# refresh total evaporation to zero
-total_evap = 0
+    # refresh total evaporation to zero
+    total_evap = 0
 
-# add a new term to total flow. At this point, doing EW and NS flows separately. 
-total_flow.append(0)
+    # add a new term to total flow. At this point, doing EW and NS flows separately. 
+    total_flow.append(0)
 
-# loop over graticules
-for latindex in range(gratextents[0]):
-    for lonindex in range(gratextents[1]):
-        # Load graticule
-        graticule_space = np.load(inputpath+"/test"+str(latindex)+str(lonindex)+".npy")
+    # loop over graticules
+    for latindex in range(gratextents[0]):
+        for lonindex in range(gratextents[1]):
+            # Load graticule
+            graticule_space = np.load(inputpath+"/test"+str(latindex)+str(lonindex)+".npy")
+            
+            # update ghost zones from old ghost zone 
+            # (which was the new ghost zone from the previous time step)
+            graticule_space[1:-1,0,2] = ghostEWold[res*latindex:res*(latindex+1),(2*lonindex-1)%gratextents[1]]
+            graticule_space[1:-1,-1,2] = ghostEWold[res*latindex:res*(latindex+1),(2*lonindex+2)%gratextents[1]]
+            
+            # Compute flow for EW in place
+            graticule_space[:,:-1,3] = timestep*np.diff(graticule_space[:,:,0] + graticule_space[:,:,2], axis = 1)
+            
+            # Update graticule depths
+            # This must be normalized by the existing depth, or depth will go negative. 
+            # Important to preserve conservatism.
+            # Compute positive flow (right to left)
+            graticule_space[:,:-1,5] = (0.5+0.5*np.sign(graticule_space[:,:-1,3]))*graticule_space[:,:-1,3] #positive, flows to the left, loss from right, add to left
+            # Compute negative flow (left to right)
+            graticule_space[:,:-1,6] = (0.5-0.5*np.sign(graticule_space[:,:-1,3]))*graticule_space[:,:-1,3] #negative, flows to the right, loss from left, add to right
+            # Compute norm
+            graticule_space[:,1:-1,7] = np.minimum(graticule_space[:,1:-1,2]/(10**-8 + graticule_space[:,:-2,5] - graticule_space[:,1:-1,6]),1.0)
+            
+            # update depth, including a metric term that converts flows to volumes, scaled by latitude.
+            graticule_space[:,1:-1,2] += graticule_space[:,1:-1,7]*(graticule_space[:,1:-1,5] - graticule_space[:,:-2,5] + graticule_space[:,1:-1,6] - graticule_space[:,:-2,6])*graticule_space[:,1:-1,1]
+            total_flow[-1] += np.sum(np.abs(graticule_space[:,1:-1,7]*(graticule_space[:,1:-1,5] - graticule_space[:,:-2,5] + graticule_space[:,1:-1,6] - graticule_space[:,:-2,6])*graticule_space[:,1:-1,1]))
+            
+            # Note to self. Imagine an array like 
+            # 0 0 1 0 0 0
+            # Diff looks like
+            # 0 1 -1 0 0 
+            # Compute norm fraction for central 4
+            # Diff+[:-1] - Diff-[1:]
+            # Compute fate for central 4
+            # (Diff+[1:] - Diff+[:-1] + Diff-[1:] - Diff-[:-1]) * norm
+            
+            # Determine correct evaporation level. Reusing layer 5 of graticule array.
+            graticule_space[1:-1,1:-1,5] = np.minimum(graticule_space[1:-1,1:-1,2],precip)
+            # Evaporate
+            graticule_space[1:-1,1:-1,2] -= graticule_space[1:-1,1:-1,5]
+            # Compute total volume by including metric
+            total_evap += np.sum(graticule_space[1:-1,1:-1,5]*graticule_space[1:-1,1:-1,1])
+            
+            # update ghost zones (new)
+            ghostEWnew[res*latindex:res*(latindex+1),2*lonindex] = graticule_space[1:-1,1,2]
+            ghostEWnew[res*latindex:res*(latindex+1),1+2*lonindex] = graticule_space[1:-1,-2,2]
+            
+            # save graticule
+            np.save(inputpath+"/test"+str(latindex)+str(lonindex),graticule_space)
 
-        # update ghost zones from old ghost zone 
-        # (which was the new ghost zone from the previous time step)
-        graticule_space[1:-1,0,2] = ghostEWold[res*latindex:res*(latindex+1),(2*lonindex-1)%gratextents[1]]
-        graticule_space[1:-1,-1,2] = ghostEWold[res*latindex:res*(latindex+1),(2*lonindex+2)%gratextents[1]]
+
+
+    # Do the same for NS
+    # Cycle ghostzone. I hope this is assignation, not binding.
+    ghostNSold = ghostNSnew
+    
+    total_flow.append(0)
+    
+    # loop over graticules
+    for latindex in range(gratextents[0]):
+        for lonindex in range(gratextents[1]):
+            # Load graticule
+            graticule_space = np.load(inputpath+"/test"+str(latindex)+str(lonindex)+".npy")
+            
+            # update ghost zones from old ghost zone 
+            # (which was the new ghost zone from the previous time step)
+            if latindex == 0:
+                graticule_space[0,1:-1,2] = graticule_space[1,1:-1,2]
+            else:
+                graticule_space[0,1:-1,2] = ghostNSold[2*latindex-1,res*lonindex:res*(lonindex+1)]
+            if latindex == gratextents[0]-1:
+                graticule_space[-1,1:-1,2] = graticule_space[-2,1:-1,2]
+            else:
+                graticule_space[-1,1:-1,2] = ghostNSold[2*latindex+2,res*lonindex:res*(lonindex+1)]
         
-        # Compute flow for EW in place
-        graticule_space[:,:-1,3] = timestep*np.diff(graticule_space[:,:,0] + graticule_space[:,:,2], axis = 1)
+            # Rain including metric
+            graticule_space[1:-1,1:-1,2] += total_evap*graticule_space[1:-1,1:-1,0]/(totalalts*graticule_space[1:-1,1:-1,1])
 
-        # Update graticule depths
-        # This must be normalized by the existing depth, or depth will go negative. 
-        # Important to preserve conservatism.
-        # Compute positive flow (right to left)
-        graticule_space[:,:-1,5] = (0.5+0.5*np.sign(graticule_space[:,:-1,3]))*graticule_space[:,:-1,3] #positive, flows to the left, loss from right, add to left
-        # Compute negative flow (left to right)
-        graticule_space[:,:-1,6] = (0.5-0.5*np.sign(graticule_space[:,:-1,3]))*graticule_space[:,:-1,3] #negative, flows to the right, loss from left, add to right
-        # Compute norm
-        graticule_space[:,1:-1,7] = np.minimum(graticule_space[:,1:-1,2]/(10**-8 + graticule_space[:,:-2,5] - graticule_space[:,1:-1,6]),1.0)
+            # Compute flow for NS in place
+            graticule_space[:-1,:,4] = timestep*np.diff(graticule_space[:,:,0] + graticule_space[:,:,2], axis = 0)
 
-        # update depth, including a metric term that converts flows to volumes, scaled by latitude.
-        graticule_space[:,1:-1,2] += graticule_space[:,1:-1,7]*(graticule_space[:,1:-1,5] - graticule_space[:,:-2,5] + graticule_space[:,1:-1,6] - graticule_space[:,:-2,6])*graticule_space[:,1:-1,1]
-        total_flow[-1] += np.sum(np.abs(graticule_space[:,1:-1,7]*(graticule_space[:,1:-1,5] - graticule_space[:,:-2,5] + graticule_space[:,1:-1,6] - graticule_space[:,:-2,6])*graticule_space[:,1:-1,1]))
+            # Update graticule depths
+            # This must be normalized by the existing depth, or depth will go negative. 
+            # Important to preserve conservatism.
+            # Compute positive flow (right to left)
+            graticule_space[:-1,:,5] = (0.5+0.5*np.sign(graticule_space[:-1,:,4]))*graticule_space[:-1,:,4] #positive, flows to the left, loss from right, add to left
+            # Compute negative flow (left to right)
+            graticule_space[:-1,:,6] = (0.5-0.5*np.sign(graticule_space[:-1,:,4]))*graticule_space[:-1,:,4] #negative, flows to the right, loss from left, add to right
+            # Compute norm
+            graticule_space[1:-1,:,7] = np.minimum(graticule_space[1:-1,:,2]/(10**-8 + graticule_space[:-2,:,5] - graticule_space[1:-1,:,6]),1.0)
 
-        # Note to self. Imagine an array like 
-        # 0 0 1 0 0 0
-        # Diff looks like
-        # 0 1 -1 0 0 
-        # Compute norm fraction for central 4
-        # Diff+[:-1] - Diff-[1:]
-        # Compute fate for central 4
-        # (Diff+[1:] - Diff+[:-1] + Diff-[1:] - Diff-[:-1]) * norm
+            # update depth, including a metric term that converts flows to volumes, scaled by latitude.
+            graticule_space[1:-1,:,2] += graticule_space[1:-1,:,7]*(graticule_space[1:-1,:,5] - graticule_space[:-2,:,5] + graticule_space[1:-1,:,6] - graticule_space[:-2,:,6])*graticule_space[1:-1,:,1]
+            total_flow[-1] += np.sum(np.abs(graticule_space[1:-1,:,7]*(graticule_space[1:-1,:,5] - graticule_space[:-2,:,5] + graticule_space[1:-1,:,6] - graticule_space[:-2,:,6])*graticule_space[1:-1,:,1]))
 
-        # Determine correct evaporation level. Reusing layer 5 of graticule array.
-        graticule_space[1:-1,1:-1,5] = np.minimum(graticule_space[1:-1,1:-1,2],precip)
-        # Evaporate
-        graticule_space[1:-1,1:-1,2] -= graticule_space[1:-1,1:-1,5]
-        # Compute total volume by including metric
-        total_evap += np.sum(graticule_space[1:-1,1:-1,5]*graticule_space[1:-1,1:-1,1])
+            # update ghost zones (new)
+            ghostNSnew[2*latindex,res*lonindex:res*(lonindex+1)] = graticule_space[1,1:-1,2]
+            ghostNSnew[1+2*latindex,res*lonindex:res*(lonindex+1)] = graticule_space[-2,1:-1,2]
 
-        # update ghost zones (new)
-        ghostEWnew[res*latindex:res*(latindex+1),2*lonindex] = graticule_space[1:-1,1,2]
-        ghostEWnew[res*latindex:res*(latindex+1),1+2*lonindex] = graticule_space[1:-1,-2,2]
-
-        # save graticule
-        #np.save(inputpath+"/test"+str(latindex)+str(lonindex),graticule_space)
-
-
-
-# Do the same for NS
-# Cycle ghostzone. I hope this is assignation, not binding.
-ghostNSold = ghostNSnew
-
-total_flow.append[0]
-
-# loop over graticules
-for latindex in range(gratextents[0]):
-    for lonindex in range(gratextents[1]):
-        # Load graticule
-        graticule_space = np.load(inputpath+"/test"+str(latindex)+str(lonindex)+".npy")
-
-        # update ghost zones from old ghost zone 
-        # (which was the new ghost zone from the previous time step)
-        if latindex == 0:
-            graticule_space[0,1:-1,2] = graticule_space[1,1:-1,2]
-        else:
-            graticule_space[0,1:-1,2] = ghostNSold[2*latindex-1,res*lonindex:res*(lonindex+1)]
-        if latindex == gratextents[0]-1:
-            graticule_space[-1,1:-1,2] = graticule_space[-2,1:-1,2]
-        else:
-            graticule_space[-1,1:-1,2] = ghostNSold[2*latindex+2,res*lonindex:res*(lonindex+1)]
-        
-        # Rain including metric
-        graticule_space[1:-1,1:-1,2] += total_evap*graticule_space[1:-1,1:-1,0]/(totalalts*graticule_space[1:-1,1:-1,1])
-
-        # Compute flow for NS in place
-        graticule_space[:-1,:,4] = timestep*np.diff(graticule_space[:,:,0] + graticule_space[:,:,2], axis = 0)
-
-        # Update graticule depths
-        # This must be normalized by the existing depth, or depth will go negative. 
-        # Important to preserve conservatism.
-        # Compute positive flow (right to left)
-        graticule_space[:-1,:,5] = (0.5+0.5*np.sign(graticule_space[:-1,:,4]))*graticule_space[:-1,:,4] #positive, flows to the left, loss from right, add to left
-        # Compute negative flow (left to right)
-        graticule_space[:-1,:,6] = (0.5-0.5*np.sign(graticule_space[:-1,:,4]))*graticule_space[:-1,:,4] #negative, flows to the right, loss from left, add to right
-        # Compute norm
-        graticule_space[1:-1,:,7] = np.minimum(graticule_space[1:-1,:,2]/(10**-8 + graticule_space[:-2,:,5] - graticule_space[1:-1,:,6]),1.0)
-
-        # update depth, including a metric term that converts flows to volumes, scaled by latitude.
-        graticule_space[1:-1,:,2] += graticule_space[1:-1,:,7]*(graticule_space[1:-1,:,5] - graticule_space[:-2,:,5] + graticule_space[1:-1,:,6] - graticule_space[:-2,:,6])*graticule_space[1:-1,:,1]
-        total_flow[-1] += np.sum(np.abs(graticule_space[1:-1,:,7]*(graticule_space[1:-1,:,5] - graticule_space[:-2,:,5] + graticule_space[1:-1,:,6] - graticule_space[:-2,:,6])*graticule_space[1:-1,:,1]))
-
-        # update ghost zones (new)
-        ghostNSnew[2*latindex,res*lonindex:res*(lonindex+1)] = graticule_space[1,1:-1,2]
-        ghostNSnew[1+2*latindex,res*lonindex:res*(lonindex+1)] = graticule_space[-2,1:-1,2]
-
-        # save graticule
-        #np.save(inputpath+"/test"+str(latindex)+str(lonindex),graticule_space)
-
-print(total_flow)
+            # save graticule
+            np.save(inputpath+"/test"+str(latindex)+str(lonindex),graticule_space)
+            
+plt.plot((np.array(total_flow)[::2]**2+np.array(total_flow)[1::2]**2)**0.5)
+plt.show()
 
