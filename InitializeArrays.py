@@ -59,8 +59,8 @@ for latindex in range(gratextents[0]):
 for latindex in range(gratextents[0]):
     for lonindex in range(gratextents[1]):
         output = np.load(outputpath+"/test"+str(latindex)+str(lonindex)+".npy")
-        output[1:-1,0] = np.load(outputpath+"/test"+str(latindex)+str((lonindex-1)%gratextents[1])+".npy")[1:-1,-1]
-        output[1:-1,-1] = np.load(outputpath+"/test"+str(latindex)+str((lonindex+1)%gratextents[1])+".npy")[1:-1,0]
+        output[1:-1,0] = np.load(outputpath+"/test"+str(latindex)+str((lonindex-1)%gratextents[1])+".npy")[1:-1,-2]
+        output[1:-1,-1] = np.load(outputpath+"/test"+str(latindex)+str((lonindex+1)%gratextents[1])+".npy")[1:-1,1]
         np.save(outputpath+"/test"+str(latindex)+str(lonindex),output)
 # fix vertically
 for latindex in range(gratextents[0]):
@@ -70,11 +70,11 @@ for latindex in range(gratextents[0]):
             # north pole case. replicate previous line, and no water will flow either way.
             output[0] = output[1]
         else:
-            output[0] = np.load(outputpath+"/test"+str(latindex-1)+str(lonindex)+".npy")[-1]
+            output[0] = np.load(outputpath+"/test"+str(latindex-1)+str(lonindex)+".npy")[-2]
         if latindex == gratextents[0]-1:
             #south pole case. replicate polar line, no water will flow either way
             output[-1] = output[-2]
         else:
-            output[-1] = np.load(outputpath+"/test"+str(latindex+1)+str(lonindex)+".npy")[0]
+            output[-1] = np.load(outputpath+"/test"+str(latindex+1)+str(lonindex)+".npy")[1]
         np.save(outputpath+"/test"+str(latindex)+str(lonindex),output)
 
