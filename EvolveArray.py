@@ -90,7 +90,7 @@ totalalts += -res*res*gratextents[0]*gratextents[1]*minalt
 total_flow = []
 
 #loop time steps
-for i in range(100):
+for i in range(1):
 
     # refresh ghost zones (begin the new time step with fresh space for old ghost zones)
     ghostEWold = ghostEWnew
@@ -204,6 +204,6 @@ for i in range(100):
             # save graticule
             np.save(inputpath+"/test"+str(latindex)+str(lonindex),graticule_space)
             
-plt.plot((np.array(total_flow)[::2]**2+np.array(total_flow)[1::2]**2)**0.5)
-plt.show()
+#plt.plot((np.array(total_flow)[::2]**2+np.array(total_flow)[1::2]**2)**0.5)
+#plt.show()
 
