@@ -30,8 +30,10 @@ for latindex in range(gratextents[0]):
         #plt.imshow(graticule_space[1:-1,1:-1,5])
         #plt.show()
         big_array[int(res*latindex/subsample):int(res*(latindex+1)/subsample),
-                  int(res*lonindex/subsample):int(res*(lonindex+1)/subsample)] = graticule_space[1:-1,1:-1,2]
+                  int(res*lonindex/subsample):int(res*(lonindex+1)/subsample)] = graticule_space[1:-1,1:-1,2]#*graticule_space[1:-1,1:-1,1]
         #print([int(res*latindex/subsample),int(res*(latindex+1)/subsample)])
+
+print(np.sum(big_array/(45*45*4*8)))
 
 plt.figure(figsize = (20,40))
 plt.imshow(big_array)

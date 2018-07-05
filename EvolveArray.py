@@ -90,7 +90,9 @@ totalalts += -res*res*gratextents[0]*gratextents[1]*minalt
 total_flow = []
 
 #loop time steps
-for i in range(1000):
+for i in range(3000):
+    if i%100 == 1:
+        print([i, total_flow[-1]])
 
     # refresh ghost zones (begin the new time step with fresh space for old ghost zones)
     ghostEWold = ghostEWnew
@@ -126,11 +128,9 @@ for i in range(1000):
             graticule_space[:,1:-1,7] = np.minimum(graticule_space[:,1:-1,2]/(10**-8 + graticule_space[:,:-2,5] - graticule_space[:,1:-1,6]),1.0)
 
             # update flow, including a metric term that converts flows to volumes, scaled by latitude.
-            graticule_space[:,1:-1,3] = graticule_space[:,1:-1,7]*(graticule_space[:,1:-1,5] - graticule_space[:,:-2,5] + graticule_space[:,1:-1,6] - graticule_space[:,:-2,6])*graticule_space[:,1:-1,1]
-            
             # update depth
-            graticule_space[:,1:-1,2] += graticule_space[:,1:-1,3]
-            total_flow[-1] += np.sum(np.abs(graticule_space[:,1:-1,3]))
+            graticule_space[:,1:-1,2] += graticule_space[:,1:-1,7]*(graticule_space[:,1:-1,5] - graticule_space[:,:-2,5] + graticule_space[:,1:-1,6] - graticule_space[:,:-2,6])*graticule_space[:,1:-1,1]
+            total_flow[-1] += np.sum(np.abs(graticule_space[:,1:-1,7]*(graticule_space[:,1:-1,5] - graticule_space[:,:-2,5] + graticule_space[:,1:-1,6] - graticule_space[:,:-2,6])*graticule_space[:,1:-1,1]))
             
             # Note to self. Imagine an array like 
             # 0 0 1 0 0 0
@@ -197,11 +197,9 @@ for i in range(1000):
             graticule_space[1:-1,:,7] = np.minimum(graticule_space[1:-1,:,2]/(10**-8 + graticule_space[:-2,:,5] - graticule_space[1:-1,:,6]),1.0)
 
             # reset flow with normalized parts, including a metric term that converts flows to volumes, scaled by latitude.
-            graticule_space[1:-1,:,4] = graticule_space[1:-1,:,7]*(graticule_space[1:-1,:,5] - graticule_space[:-2,:,5] + graticule_space[1:-1,:,6] - graticule_space[:-2,:,6])*graticule_space[1:-1,:,1]
-
             # update depth
-            graticule_space[1:-1,:,2] += graticule_space[1:-1,:,4]
-            total_flow[-1] += np.sum(np.abs(graticule_space[1:-1,:,4]))
+            graticule_space[1:-1,:,2] += graticule_space[1:-1,:,7]*(graticule_space[1:-1,:,5] - graticule_space[:-2,:,5] + graticule_space[1:-1,:,6] - graticule_space[:-2,:,6])*graticule_space[1:-1,:,1]
+            total_flow[-1] += np.sum(np.abs(graticule_space[1:-1,:,7]*(graticule_space[1:-1,:,5] - graticule_space[:-2,:,5] + graticule_space[1:-1,:,6] - graticule_space[:-2,:,6])*graticule_space[1:-1,:,1]))
 
             # update ghost zones (new)
             ghostNSnew[2*latindex,res*lonindex:res*(lonindex+1)] = graticule_space[1,1:-1,2]
