@@ -23,7 +23,7 @@ inputpath = thisdir + "res"+str(res)+"/"
 
 gratextents = [4,8]
 
-timestep = 0.1
+timestep = 0.2
 
 precip = 0*0.0015*gratextents[0]*res/720
 
@@ -90,7 +90,7 @@ totalalts += -res*res*gratextents[0]*gratextents[1]*minalt
 total_flow = []
 
 #loop time steps
-for i in range(1):
+for i in range(1000):
 
     # refresh ghost zones (begin the new time step with fresh space for old ghost zones)
     ghostEWold = ghostEWnew
@@ -109,8 +109,8 @@ for i in range(1):
             
             # update ghost zones from old ghost zone 
             # (which was the new ghost zone from the previous time step)
-            graticule_space[1:-1,0,2] = ghostEWold[res*latindex:res*(latindex+1),(2*lonindex-1)%gratextents[1]]
-            graticule_space[1:-1,-1,2] = ghostEWold[res*latindex:res*(latindex+1),(2*lonindex+2)%gratextents[1]]
+            graticule_space[1:-1,0,2] = ghostEWold[res*latindex:res*(latindex+1),(2*lonindex-1)%(2*gratextents[1])]
+            graticule_space[1:-1,-1,2] = ghostEWold[res*latindex:res*(latindex+1),(2*lonindex+2)%(2*gratextents[1])]
             
             # Compute flow for EW in place
             graticule_space[:,:-1,3] = timestep*np.diff(graticule_space[:,:,0] + graticule_space[:,:,2], axis = 1)
@@ -124,10 +124,13 @@ for i in range(1):
             graticule_space[:,:-1,6] = (0.5-0.5*np.sign(graticule_space[:,:-1,3]))*graticule_space[:,:-1,3] #negative, flows to the right, loss from left, add to right
             # Compute norm
             graticule_space[:,1:-1,7] = np.minimum(graticule_space[:,1:-1,2]/(10**-8 + graticule_space[:,:-2,5] - graticule_space[:,1:-1,6]),1.0)
+
+            # update flow, including a metric term that converts flows to volumes, scaled by latitude.
+            graticule_space[:,1:-1,3] = graticule_space[:,1:-1,7]*(graticule_space[:,1:-1,5] - graticule_space[:,:-2,5] + graticule_space[:,1:-1,6] - graticule_space[:,:-2,6])*graticule_space[:,1:-1,1]
             
-            # update depth, including a metric term that converts flows to volumes, scaled by latitude.
-            graticule_space[:,1:-1,2] += graticule_space[:,1:-1,7]*(graticule_space[:,1:-1,5] - graticule_space[:,:-2,5] + graticule_space[:,1:-1,6] - graticule_space[:,:-2,6])*graticule_space[:,1:-1,1]
-            total_flow[-1] += np.sum(np.abs(graticule_space[:,1:-1,7]*(graticule_space[:,1:-1,5] - graticule_space[:,:-2,5] + graticule_space[:,1:-1,6] - graticule_space[:,:-2,6])*graticule_space[:,1:-1,1]))
+            # update depth
+            graticule_space[:,1:-1,2] += graticule_space[:,1:-1,3]
+            total_flow[-1] += np.sum(np.abs(graticule_space[:,1:-1,3]))
             
             # Note to self. Imagine an array like 
             # 0 0 1 0 0 0
@@ -193,9 +196,12 @@ for i in range(1):
             # Compute norm
             graticule_space[1:-1,:,7] = np.minimum(graticule_space[1:-1,:,2]/(10**-8 + graticule_space[:-2,:,5] - graticule_space[1:-1,:,6]),1.0)
 
-            # update depth, including a metric term that converts flows to volumes, scaled by latitude.
-            graticule_space[1:-1,:,2] += graticule_space[1:-1,:,7]*(graticule_space[1:-1,:,5] - graticule_space[:-2,:,5] + graticule_space[1:-1,:,6] - graticule_space[:-2,:,6])*graticule_space[1:-1,:,1]
-            total_flow[-1] += np.sum(np.abs(graticule_space[1:-1,:,7]*(graticule_space[1:-1,:,5] - graticule_space[:-2,:,5] + graticule_space[1:-1,:,6] - graticule_space[:-2,:,6])*graticule_space[1:-1,:,1]))
+            # reset flow with normalized parts, including a metric term that converts flows to volumes, scaled by latitude.
+            graticule_space[1:-1,:,4] = graticule_space[1:-1,:,7]*(graticule_space[1:-1,:,5] - graticule_space[:-2,:,5] + graticule_space[1:-1,:,6] - graticule_space[:-2,:,6])*graticule_space[1:-1,:,1]
+
+            # update depth
+            graticule_space[1:-1,:,2] += graticule_space[1:-1,:,4]
+            total_flow[-1] += np.sum(np.abs(graticule_space[1:-1,:,4]))
 
             # update ghost zones (new)
             ghostNSnew[2*latindex,res*lonindex:res*(lonindex+1)] = graticule_space[1,1:-1,2]
@@ -204,6 +210,6 @@ for i in range(1):
             # save graticule
             np.save(inputpath+"/test"+str(latindex)+str(lonindex),graticule_space)
             
-#plt.plot((np.array(total_flow)[::2]**2+np.array(total_flow)[1::2]**2)**0.5)
-#plt.show()
+plt.plot((np.array(total_flow)[::2]**2+np.array(total_flow)[1::2]**2)**0.5)
+plt.show()
 
