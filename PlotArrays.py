@@ -6,7 +6,8 @@ res = 45
 # Path to memory location for arrays of a particular resolution
 thisdir = "/home/handmer/Documents/Mars/water-flow/"
 
-inputpath = thisdir + "res"+str(res)+"/"#"-fresh/"
+inputpath = thisdir + "res"+str(res)+"/"
+#inputpath = thisdir + "res"+str(res)+"-fresh/"
 
 gratextents = [4,8]
 
@@ -30,15 +31,26 @@ for latindex in range(gratextents[0]):
         #plt.imshow(graticule_space[1:-1,1:-1,5])
         #plt.show()
         big_array[int(res*latindex/subsample):int(res*(latindex+1)/subsample),
-                  int(res*lonindex/subsample):int(res*(lonindex+1)/subsample)] = graticule_space[1:-1,1:-1,2]#*graticule_space[1:-1,1:-1,1]
+                  int(res*lonindex/subsample):int(res*(lonindex+1)/subsample)] = graticule_space[1:-1,1:-1,2]*graticule_space[1:-1,1:-1,1]
         #print([int(res*latindex/subsample),int(res*(latindex+1)/subsample)])
 
+# average volume per pixel. Should be about 95.5
 print(np.sum(big_array/(45*45*4*8)))
 
-plt.figure(figsize = (20,40))
-plt.imshow(big_array)
-plt.show()
+print(np.min(big_array))
 
-#plt.imshow(np.load(inputpath+"/test"+str(1)+str(5)+".npy")[:,:,0])
+print(np.max(big_array))
+
+
+#plt.figure(figsize = (20,40))
+#plt.imshow(big_array)
 #plt.show()
 
+plt.imshow(np.load(inputpath+"/test"+str(2)+str(4)+".npy")[:,:,2])
+plt.show()
+
+print(np.load(inputpath+"/test"+str(2)+str(4)+".npy")[20:25,20:25,7])
+
+
+
+# Something is generating more water. Also, something is generating a transient at the beginning of a restarted thingo. This is a worry.

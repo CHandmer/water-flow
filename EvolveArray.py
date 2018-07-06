@@ -27,7 +27,7 @@ timestep = 0.2
 
 precip = 0*0.0015*gratextents[0]*res/720
 
-reset_depths = False
+reset_depths = True
 GED = 150
 
 import numpy as np
@@ -73,7 +73,9 @@ for latindex in range(gratextents[0]):
         graticule_space = np.load(inputpath+"/test"+str(latindex)+str(lonindex)+".npy")
         if reset_depths:
             graticule_space[:,:,2] *= 0
-            graticule_space[:,:,2] += GED
+            #graticule_space[:,:,2] += GED
+            graticule_space[23,23,2] += GED
+            np.save(inputpath+"/test"+str(latindex)+str(lonindex),graticule_space)
         ghostNSnew[2*latindex,res*lonindex:res*(lonindex+1)] = graticule_space[1,1:-1,2]
         ghostNSnew[1+2*latindex,res*lonindex:res*(lonindex+1)] = graticule_space[-2,1:-1,2]
         ghostEWnew[res*latindex:res*(latindex+1),2*lonindex] = graticule_space[1:-1,1,2]
@@ -90,7 +92,7 @@ totalalts += -res*res*gratextents[0]*gratextents[1]*minalt
 total_flow = []
 
 #loop time steps
-for i in range(3000):
+for i in range(1):
     if i%100 == 1:
         print([i, total_flow[-1]])
 
@@ -125,12 +127,19 @@ for i in range(3000):
             # Compute negative flow (left to right)
             graticule_space[:,:-1,6] = (0.5-0.5*np.sign(graticule_space[:,:-1,3]))*graticule_space[:,:-1,3] #negative, flows to the right, loss from left, add to right
             # Compute norm
+            graticule_space[:,:,7] *= 0.0
             graticule_space[:,1:-1,7] = np.minimum(graticule_space[:,1:-1,2]/(10**-8 + graticule_space[:,:-2,5] - graticule_space[:,1:-1,6]),1.0)
+            # Adjust flows for norm
+            graticule_space[:,:-1,5] *= graticule_space[:,1:,7]
+            graticule_space[:,:-1,6] *= graticule_space[:,:-1,7]
 
             # update flow, including a metric term that converts flows to volumes, scaled by latitude.
             # update depth
-            graticule_space[:,1:-1,2] += graticule_space[:,1:-1,7]*(graticule_space[:,1:-1,5] - graticule_space[:,:-2,5] + graticule_space[:,1:-1,6] - graticule_space[:,:-2,6])*graticule_space[:,1:-1,1]
-            total_flow[-1] += np.sum(np.abs(graticule_space[:,1:-1,7]*(graticule_space[:,1:-1,5] - graticule_space[:,:-2,5] + graticule_space[:,1:-1,6] - graticule_space[:,:-2,6])*graticule_space[:,1:-1,1]))
+            graticule_space[1:-1,1:-1,2] += (graticule_space[1:-1,1:-1,5] - graticule_space[1:-1,:-2,5] + graticule_space[1:-1,1:-1,6] - graticule_space[1:-1,:-2,6])*graticule_space[1:-1,1:-1,1]
+            #total_flow[-1] += np.sum(np.abs((graticule_space[1:-1,1:-1,5] - graticule_space[1:-1,:-2,5] + graticule_space[1:-1,1:-1,6] - graticule_space[1:-1,:-2,6])*graticule_space[1:-1,1:-1,1]))
+            total_flow.append(np.sum((graticule_space[1:-1,1:-1,5] - graticule_space[1:-1,:-2,5] + graticule_space[1:-1,1:-1,6] - graticule_space[1:-1,:-2,6])*graticule_space[1:-1,1:-1,1]))
+            
+            #print(np.sum(graticule_space[:,1:-1,7]*(graticule_space[:,1:-1,5] - graticule_space[:,:-2,5] + graticule_space[:,1:-1,6] - graticule_space[:,:-2,6])*graticule_space[:,1:-1,1]))
             
             # Note to self. Imagine an array like 
             # 0 0 1 0 0 0
@@ -138,8 +147,11 @@ for i in range(3000):
             # 0 1 -1 0 0 
             # Compute norm fraction for central 4
             # Diff+[:-1] - Diff-[1:]
+            # 0 2 0 0 <--- norm = 0 0.5 0 0
             # Compute fate for central 4
             # (Diff+[1:] - Diff+[:-1] + Diff-[1:] - Diff-[:-1]) * norm
+            # 1 0 0 0      0 -1 0 0     0 -1 0 0    0 0 1 0
+            # 0.5 0 0 0    0 0.5 0 0    0 0.5 0 0   0 0 0.5 0
             
             # Determine correct evaporation level. Reusing layer 5 of graticule array.
             graticule_space[1:-1,1:-1,5] = np.minimum(graticule_space[1:-1,1:-1,2],precip)
@@ -194,12 +206,20 @@ for i in range(3000):
             # Compute negative flow (left to right)
             graticule_space[:-1,:,6] = (0.5-0.5*np.sign(graticule_space[:-1,:,4]))*graticule_space[:-1,:,4] #negative, flows to the right, loss from left, add to right
             # Compute norm
+            graticule_space[:,:,7] *= 0.0
             graticule_space[1:-1,:,7] = np.minimum(graticule_space[1:-1,:,2]/(10**-8 + graticule_space[:-2,:,5] - graticule_space[1:-1,:,6]),1.0)
+            # Adjust flows for norm
+            graticule_space[:-1,:,5] *= graticule_space[1:,:,7]
+            graticule_space[:-1,:,6] *= graticule_space[:-1,:,7]
 
             # reset flow with normalized parts, including a metric term that converts flows to volumes, scaled by latitude.
             # update depth
-            graticule_space[1:-1,:,2] += graticule_space[1:-1,:,7]*(graticule_space[1:-1,:,5] - graticule_space[:-2,:,5] + graticule_space[1:-1,:,6] - graticule_space[:-2,:,6])*graticule_space[1:-1,:,1]
-            total_flow[-1] += np.sum(np.abs(graticule_space[1:-1,:,7]*(graticule_space[1:-1,:,5] - graticule_space[:-2,:,5] + graticule_space[1:-1,:,6] - graticule_space[:-2,:,6])*graticule_space[1:-1,:,1]))
+            graticule_space[1:-1,:,2] += (graticule_space[1:-1,:,5] - graticule_space[:-2,:,5] + graticule_space[1:-1,:,6] - graticule_space[:-2,:,6])*graticule_space[1:-1,:,1]
+            #total_flow[-1] += np.sum(np.abs((graticule_space[1:-1,:,5] - graticule_space[:-2,:,5] + graticule_space[1:-1,:,6] - graticule_space[:-2,:,6])*graticule_space[1:-1,:,1]))
+            total_flow.append(np.sum((graticule_space[1:-1,:,5] - graticule_space[:-2,:,5] + graticule_space[1:-1,:,6] - graticule_space[:-2,:,6])*graticule_space[1:-1,:,1]))
+
+
+            #print(np.sum((graticule_space[1:-1,:,5] - graticule_space[:-2,:,5] + graticule_space[1:-1,:,6] - graticule_space[:-2,:,6])))
 
             # update ghost zones (new)
             ghostNSnew[2*latindex,res*lonindex:res*(lonindex+1)] = graticule_space[1,1:-1,2]
@@ -208,6 +228,8 @@ for i in range(3000):
             # save graticule
             np.save(inputpath+"/test"+str(latindex)+str(lonindex),graticule_space)
             
-plt.plot((np.array(total_flow)[::2]**2+np.array(total_flow)[1::2]**2)**0.5)
-plt.show()
+print(total_flow)
+print(np.sum(total_flow))
+#plt.plot((np.array(total_flow)[::2]**2+np.array(total_flow)[1::2]**2)**0.5)
+#plt.show()
 
