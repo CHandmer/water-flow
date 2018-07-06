@@ -1,18 +1,3 @@
-# This script contains functions of the primitive array that evolve it forward one time step. 
-
-# Steps
-# 1) Read array from memory
-# 2) Update ghost zones for outer edges
-# 3) Evolve array (EW)
-# 4) Update ghost zones for inner edges to new ghost zone array
-# 5) Write update to memory
-
-# 5.5) set new ghost zones to old ghost zones
-# 6) Do it all again for NS.
-
-
-# This script also initializes an array containing ghost zone information, which is how adjacent sectors pass depth information back and forth.
-
 # User set parameters
 res = 45
 
@@ -23,12 +8,14 @@ inputpath = thisdir + "res"+str(res)+"/"
 
 gratextents = [4,8]
 
-timestep = 0.2
+timestep = 0.02
 
 precip = 0*0.0015*gratextents[0]*res/720
 
 reset_depths = True
 GED = 150
+
+number_of_steps=1
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -73,8 +60,8 @@ for latindex in range(gratextents[0]):
         graticule_space = np.load(inputpath+"/test"+str(latindex)+str(lonindex)+".npy")
         if reset_depths:
             graticule_space[:,:,2] *= 0
-            #graticule_space[:,:,2] += GED
-            graticule_space[23,23,2] += GED
+            graticule_space[:,:,2] += GED
+            #graticule_space[23,23,2] += GED
             np.save(inputpath+"/test"+str(latindex)+str(lonindex),graticule_space)
         ghostNSnew[2*latindex,res*lonindex:res*(lonindex+1)] = graticule_space[1,1:-1,2]
         ghostNSnew[1+2*latindex,res*lonindex:res*(lonindex+1)] = graticule_space[-2,1:-1,2]
@@ -92,7 +79,7 @@ totalalts += -res*res*gratextents[0]*gratextents[1]*minalt
 total_flow = []
 
 #loop time steps
-for i in range(1):
+for i in range(number_of_steps):
     if i%100 == 1:
         print([i, total_flow[-1]])
 
@@ -128,18 +115,19 @@ for i in range(1):
             graticule_space[:,:-1,6] = (0.5-0.5*np.sign(graticule_space[:,:-1,3]))*graticule_space[:,:-1,3] #negative, flows to the right, loss from left, add to right
             # Compute norm
             graticule_space[:,:,7] *= 0.0
-            graticule_space[:,1:-1,7] = np.minimum(graticule_space[:,1:-1,2]/(10**-8 + graticule_space[:,:-2,5] - graticule_space[:,1:-1,6]),1.0)
+            # add in volume term
+            graticule_space[:,:-1,5] *= graticule_space[:,:-1,1]
+            graticule_space[:,:-1,6] *= graticule_space[:,:-1,1]
+            # Compute norm
+            graticule_space[:,1:-1,7] = np.minimum(graticule_space[:,1:-1,2]*graticule_space[:,1:-1,1]/(10**-8 + graticule_space[:,:-2,5] - graticule_space[:,1:-1,6]),1.0)
             # Adjust flows for norm
             graticule_space[:,:-1,5] *= graticule_space[:,1:,7]
             graticule_space[:,:-1,6] *= graticule_space[:,:-1,7]
 
             # update flow, including a metric term that converts flows to volumes, scaled by latitude.
             # update depth
-            graticule_space[1:-1,1:-1,2] += (graticule_space[1:-1,1:-1,5] - graticule_space[1:-1,:-2,5] + graticule_space[1:-1,1:-1,6] - graticule_space[1:-1,:-2,6])*graticule_space[1:-1,1:-1,1]
-            #total_flow[-1] += np.sum(np.abs((graticule_space[1:-1,1:-1,5] - graticule_space[1:-1,:-2,5] + graticule_space[1:-1,1:-1,6] - graticule_space[1:-1,:-2,6])*graticule_space[1:-1,1:-1,1]))
-            total_flow.append(np.sum((graticule_space[1:-1,1:-1,5] - graticule_space[1:-1,:-2,5] + graticule_space[1:-1,1:-1,6] - graticule_space[1:-1,:-2,6])*graticule_space[1:-1,1:-1,1]))
-            
-            #print(np.sum(graticule_space[:,1:-1,7]*(graticule_space[:,1:-1,5] - graticule_space[:,:-2,5] + graticule_space[:,1:-1,6] - graticule_space[:,:-2,6])*graticule_space[:,1:-1,1]))
+            graticule_space[1:-1,1:-1,2] += (graticule_space[1:-1,1:-1,5] - graticule_space[1:-1,:-2,5] + graticule_space[1:-1,1:-1,6] - graticule_space[1:-1,:-2,6])/graticule_space[1:-1,1:-1,1]
+            total_flow[-1] += np.sum(np.abs((graticule_space[1:-1,1:-1,5] - graticule_space[1:-1,:-2,5] + graticule_space[1:-1,1:-1,6] - graticule_space[1:-1,:-2,6])/graticule_space[1:-1,1:-1,1]))
             
             # Note to self. Imagine an array like 
             # 0 0 1 0 0 0
@@ -207,19 +195,20 @@ for i in range(1):
             graticule_space[:-1,:,6] = (0.5-0.5*np.sign(graticule_space[:-1,:,4]))*graticule_space[:-1,:,4] #negative, flows to the right, loss from left, add to right
             # Compute norm
             graticule_space[:,:,7] *= 0.0
-            graticule_space[1:-1,:,7] = np.minimum(graticule_space[1:-1,:,2]/(10**-8 + graticule_space[:-2,:,5] - graticule_space[1:-1,:,6]),1.0)
+            # Add in volume term
+            graticule_space[:-1,:,5] *= graticule_space[1:,:,1]
+            graticule_space[:-1,:,6] *= graticule_space[:-1,:,1]
+            graticule_space[1:-1,:,7] = np.minimum(graticule_space[1:-1,:,2]*graticule_space[1:-1,:,1]/(10**-8 + graticule_space[:-2,:,5] - graticule_space[1:-1,:,6]),1.0)
             # Adjust flows for norm
             graticule_space[:-1,:,5] *= graticule_space[1:,:,7]
             graticule_space[:-1,:,6] *= graticule_space[:-1,:,7]
 
+            # The problem here is that ..[7] normalizes for water available within the active parts of the graticule, but flows are also coming in from the ghost zones, which are presently normalized to zero. This will need to be solved. 
+
             # reset flow with normalized parts, including a metric term that converts flows to volumes, scaled by latitude.
             # update depth
-            graticule_space[1:-1,:,2] += (graticule_space[1:-1,:,5] - graticule_space[:-2,:,5] + graticule_space[1:-1,:,6] - graticule_space[:-2,:,6])*graticule_space[1:-1,:,1]
-            #total_flow[-1] += np.sum(np.abs((graticule_space[1:-1,:,5] - graticule_space[:-2,:,5] + graticule_space[1:-1,:,6] - graticule_space[:-2,:,6])*graticule_space[1:-1,:,1]))
-            total_flow.append(np.sum((graticule_space[1:-1,:,5] - graticule_space[:-2,:,5] + graticule_space[1:-1,:,6] - graticule_space[:-2,:,6])*graticule_space[1:-1,:,1]))
-
-
-            #print(np.sum((graticule_space[1:-1,:,5] - graticule_space[:-2,:,5] + graticule_space[1:-1,:,6] - graticule_space[:-2,:,6])))
+            graticule_space[1:-1,:,2] += (graticule_space[1:-1,:,5] - graticule_space[:-2,:,5] + graticule_space[1:-1,:,6] - graticule_space[:-2,:,6])/graticule_space[1:-1,:,1]
+            total_flow[-1] += np.sum(np.abs((graticule_space[1:-1,:,5] - graticule_space[:-2,:,5] + graticule_space[1:-1,:,6] - graticule_space[:-2,:,6])/graticule_space[1:-1,:,1]))
 
             # update ghost zones (new)
             ghostNSnew[2*latindex,res*lonindex:res*(lonindex+1)] = graticule_space[1,1:-1,2]
@@ -230,6 +219,6 @@ for i in range(1):
             
 print(total_flow)
 print(np.sum(total_flow))
-#plt.plot((np.array(total_flow)[::2]**2+np.array(total_flow)[1::2]**2)**0.5)
-#plt.show()
+plt.plot((np.array(total_flow)[::2]**2+np.array(total_flow)[1::2]**2)**0.5)
+plt.show()
 
