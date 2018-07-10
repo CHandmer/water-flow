@@ -18,7 +18,7 @@ precip = 0*0.0015*gratextents[0]*res/720
 reset_depths = False
 GED = 150
 
-number_of_steps=1000
+number_of_steps=50000
 
 import numpy as np
 from matplotlib import pyplot as plt

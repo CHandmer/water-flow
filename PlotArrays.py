@@ -30,7 +30,7 @@ for latindex in range(gratextents[0]):
         graticule_space[:,:,5] = ((graticule_space[:,:,3])**2+(graticule_space[:,:,4])**2)**0.5
         #plt.imshow(graticule_space[1:-1,1:-1,5])
         #plt.show()
-        graticule_space[2:-2,2:-2,0] = graticule_space[2:-2,2:-2,2]
+        #graticule_space[2:-2,2:-2,0] = graticule_space[2:-2,2:-2,2]
         #graticule_space[2:-2,2:-2,0] = graticule_space[2:-2,2:-2,2]*graticule_space[2:-2,2:-2,1]
         #graticule_space[2:-2,2:-2,0] = (0.25*graticule_space[1:-3,1:-3,5]
         #                                +0.25*graticule_space[2:-2,2:-2,5]
@@ -38,6 +38,7 @@ for latindex in range(gratextents[0]):
         #                                +0.25*graticule_space[2:-2,1:-3,5]
         #)*graticule_space[2:-2,2:-2,7]
         #graticule_space[2:-2,2:-2,0] = (graticule_space[2:-2,2:-2,3]**2 + graticule_space[2:-2,2:-2,4]**2)**0.5
+        graticule_space[2:-2,2:-2,0] = graticule_space[2:-2,2:-2,5]
         big_array[int(res*latindex/subsample):int(res*(latindex+1)/subsample),
                   int(res*lonindex/subsample):int(res*(lonindex+1)/subsample)] = graticule_space[2:-2,2:-2,0]
         #print([int(res*latindex/subsample),int(res*(latindex+1)/subsample)])
