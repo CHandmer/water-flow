@@ -11,14 +11,15 @@ inputpath = thisdir + "res"+str(res)+"/"
 
 gratextents = [4,8]
 
-timestep = 0.02 #This should vary as a function of res, too
+timestep = 0.05 #This should vary as a function of res, too??
 
-precip = 0*0.0015*gratextents[0]*res/720
+# This seems to be leaky. How, why? I don't know. 
+precip = 0.15*gratextents[0]*res/720*timestep/0.05
 
 reset_depths = False
 GED = 150
 
-number_of_steps=50000
+number_of_steps=10
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -194,6 +195,7 @@ for i in range(number_of_steps):
         
             # Rain including metric
             graticule_space[2:-2,2:-2,2] += total_evap*graticule_space[2:-2,2:-2,0]/(totalalts*graticule_space[2:-2,2:-2,1])
+            print(total_evap)
 
             # Compute flow for NS in place
             graticule_space[:-1,:,4] = timestep*np.diff(graticule_space[:,:,0] + graticule_space[:,:,2], axis = 0)
