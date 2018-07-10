@@ -189,9 +189,9 @@ for i in range(number_of_steps):
             # Update graticule depths
             # This must be normalized by the existing depth, or depth will go negative. 
             # Important to preserve conservatism.
-            # Compute positive flow (right to left)
+            # Compute positive flow (bottom to top)
             graticule_space[:-1,:,5] = (0.5+0.5*np.sign(graticule_space[:-1,:,4]))*graticule_space[:-1,:,4] #positive, flows to the left, loss from right, add to left
-            # Compute negative flow (left to right)
+            # Compute negative flow (top to bottom)
             graticule_space[:-1,:,6] = (0.5-0.5*np.sign(graticule_space[:-1,:,4]))*graticule_space[:-1,:,4] #negative, flows to the right, loss from left, add to right
             # Compute norm
             graticule_space[:,:,7] *= 0.0
