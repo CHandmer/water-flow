@@ -14,13 +14,15 @@
 # - delta from step to step
 
 # User set parameters
-skip = 2**7
+skip = 2**6
 res = int(5760/skip)
 
 # Path to memory location for arrays of a particular resolution
 thisdir = "/home/handmer/Documents/Mars/water-flow/"
 outputpath = thisdir+"res"+str(res)+"/"
 sourcepath = thisdir + "RawMola/"
+interppath = thisdir + "res45-norain-converged"
+interpdepth = True
 
 # Data has been pre-sliced, originally derived from
 # https://astrogeology.usgs.gov/search/details/Mars/GlobalSurveyor/MOLA/Mars_MGS_MOLA_DEM_mosaic_global_463m/cub
@@ -52,8 +54,15 @@ for latindex in range(gratextents[0]):
         for i in range(output.shape[1]-4):
             output[2:-2,i+2,1] = metricvalues
 
-        # Implement some interpolation - constant surface height scheme here. Local tetration.
-        output[:,:,2] += GED
+        if interpdepth:
+            # Implement some interpolation - constant surface height scheme here. Local tetration.
+            interp_input = np.load(interppath+"/test"+str(latindex)+str(lonindex)+".npy")
+            output[2:-2:2,2:-2:2,2] = interp_input[2:-2,2:-2,2]+interp_input[2:-2,2:-2,0]-output[2:-2:2,2:-2:2,0]
+            output[3:-2:2,2:-2:2,2] = interp_input[2:-2,2:-2,2]+interp_input[2:-2,2:-2,0]-output[2:-2:2,2:-2:2,0]
+            output[2:-2:2,3:-2:2,2] = interp_input[2:-2,2:-2,2]+interp_input[2:-2,2:-2,0]-output[2:-2:2,2:-2:2,0]
+            output[3:-2:2,3:-2:2,2] = interp_input[2:-2,2:-2,2]+interp_input[2:-2,2:-2,0]-output[2:-2:2,2:-2:2,0]
+        else:
+            output[:,:,2] += GED
 
         np.save(outputpath+"/test"+str(latindex)+str(lonindex),output)
 
