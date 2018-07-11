@@ -2,7 +2,7 @@
 # so that the normalization step has enough data to work with.
 
 # User set parameters
-res = 45
+res = int(45)
 
 # Path to memory location for arrays of a particular resolution
 thisdir = "/home/handmer/Documents/Mars/water-flow/"
@@ -14,12 +14,12 @@ gratextents = [4,8]
 timestep = 0.05 #This should vary as a function of res, too??
 
 # This seems to be leaky. How, why? I don't know. 
-precip = 0.15*gratextents[0]*res/720*timestep/0.05
+precip = 0*1.5*gratextents[0]*res/720*timestep/0.05
 
 reset_depths = False
 GED = 150
 
-number_of_steps=10
+number_of_steps=100
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -60,6 +60,7 @@ graticule_space = np.zeros([res+4,res+4,9])
 # 
 minalt = 0
 totalalts = 0
+totalaltsmetric = 0
 for latindex in range(gratextents[0]):
     for lonindex in range(gratextents[1]):
         graticule_space = np.load(inputpath+"/test"+str(latindex)+str(lonindex)+".npy")
@@ -76,12 +77,16 @@ for latindex in range(gratextents[0]):
         # set minalt
         minalt = np.min([np.min(graticule_space[:,:,0]),minalt])
         totalalts += np.sum(graticule_space[2:-2,2:-2,0])
+        totalaltsmetric += np.sum(graticule_space[2:-2,2:-2,0]*graticule_space[2:-2,2:-2,1])
 
 # rescale to set the minimum altitude to "0"
 totalalts += -res*res*gratextents[0]*gratextents[1]*minalt
+totalaltsmetric += -res*res*gratextents[0]*gratextents[1]*minalt*2/np.pi*1.0000136796523493
 
 # This is an array of numbers representing the total flow within the system. As a measure of convergence.
 total_flow = []
+total_rain = []
+total_water = []
 
 #loop time steps
 for i in range(number_of_steps):
@@ -96,6 +101,8 @@ for i in range(number_of_steps):
 
     # add a new term to total flow. At this point, doing EW and NS flows separately. 
     total_flow.append(0)
+    total_water.append(0)
+    total_rain.append(0)
 
     # loop over graticules
     for latindex in range(gratextents[0]):
@@ -139,6 +146,7 @@ for i in range(number_of_steps):
             # update depth
             graticule_space[2:-2,2:-2,2] += graticule_space[2:-2,2:-2,8]
             total_flow[-1] += np.sum(np.abs(graticule_space[2:-2,2:-2,8]))
+            total_water[-1] += np.sum(graticule_space[2:-2,2:-2,2]*graticule_space[2:-2,2:-2,1])
             
             # Note to self. Imagine an array like 
             # 0 0 1 0 0 0
@@ -153,12 +161,13 @@ for i in range(number_of_steps):
             # 0.5 0 0 0    0 0.5 0 0    0 0.5 0 0   0 0 0.5 0
             
             # Determine correct evaporation level. Reusing layer 5 of graticule array.
-            graticule_space[2:-2,2:-2,5] = np.minimum(graticule_space[2:-2,2:-2,2],precip)
+            graticule_space[:,:,5] = np.minimum(graticule_space[:,:,2],precip)
             # Evaporate
-            graticule_space[2:-2,2:-2,2] -= graticule_space[2:-2,2:-2,5]
-            # Compute total volume by including metric
+            #graticule_space[2:-2,2:-2,2] -= graticule_space[2:-2,2:-2,5]
+            graticule_space[:,:,2] -= graticule_space[:,:,5]
+            # Compute total volume by including metric, not including ghost zones
             total_evap += np.sum(graticule_space[2:-2,2:-2,5]*graticule_space[2:-2,2:-2,1])
-            
+
             # update ghost zones (new)
             ghostEWnew[res*latindex:res*(latindex+1),4*lonindex:4*lonindex+2] = graticule_space[2:-2,2:4,2]
             ghostEWnew[res*latindex:res*(latindex+1),4*lonindex+2:4*lonindex+4] = graticule_space[2:-2,-4:-2,2]
@@ -173,6 +182,7 @@ for i in range(number_of_steps):
     ghostNSold = ghostNSnew
     
     total_flow.append(0)
+    total_water.append(0)
     
     # loop over graticules
     for latindex in range(gratextents[0]):
@@ -186,17 +196,19 @@ for i in range(number_of_steps):
                 graticule_space[0,2:-2,2] = graticule_space[2,2:-2,2]
                 graticule_space[1,2:-2,2] = graticule_space[2,2:-2,2]
             else:
-                graticule_space[0:2,2:-2,2] = ghostNSold[4*latindex-2:4*latindex,res*lonindex:res*(lonindex+1)]
+                graticule_space[:2,2:-2,2] = ghostNSold[4*latindex-2:4*latindex,res*lonindex:res*(lonindex+1)]
             if latindex == gratextents[0]-1:
                 graticule_space[-1,2:-2,2] = graticule_space[-3,2:-2,2]
                 graticule_space[-2,2:-2,2] = graticule_space[-3,2:-2,2]
             else:
                 graticule_space[-2:,2:-2,2] = ghostNSold[4*latindex+4:4*latindex+6,res*lonindex:res*(lonindex+1)]
         
-            # Rain including metric
-            graticule_space[2:-2,2:-2,2] += total_evap*graticule_space[2:-2,2:-2,0]/(totalalts*graticule_space[2:-2,2:-2,1])
-            print(total_evap)
-
+            # Rain including metric, including ghost zones
+            total_rain[-1] += np.sum(total_evap*(graticule_space[2:-2,2:-2,0]-minalt)*graticule_space[2:-2,2:-2,1]/totalaltsmetric)
+            #total_rain[-1] += np.sum(total_evap*(graticule_space[2:-2,2:-2,0]-minalt)/totalalts)
+            graticule_space[:,:,2] += total_evap*(graticule_space[:,:,0]-minalt)*graticule_space[:,:,1]/totalaltsmetric
+            #graticule_space[2:-2,2:-2,2] += total_evap*(graticule_space[2:-2,2:-2,0]-minalt)/totalalts
+            
             # Compute flow for NS in place
             graticule_space[:-1,:,4] = timestep*np.diff(graticule_space[:,:,0] + graticule_space[:,:,2], axis = 0)
 
@@ -230,6 +242,7 @@ for i in range(number_of_steps):
             
             graticule_space[2:-2,2:-2,2] += graticule_space[2:-2,2:-2,8]
             total_flow[-1] += np.sum(np.abs(graticule_space[2:-2,2:-2,8]))
+            total_water[-1] += np.sum(graticule_space[2:-2,2:-2,2]*graticule_space[2:-2,2:-2,1])
 
             # update ghost zones (new)
             ghostNSnew[4*latindex:4*latindex+2,res*lonindex:res*(lonindex+1)] = graticule_space[2:4,2:-2,2]
@@ -237,9 +250,21 @@ for i in range(number_of_steps):
 
             # save graticule
             np.save(inputpath+"/test"+str(latindex)+str(lonindex),graticule_space)
+
+            #print(np.min(graticule_space[2:-2,2:-2,2]))
+    total_rain.append(total_evap)
+    
             
-print(total_flow)
-print(np.sum(total_flow))
+#print(total_evap)
+#print(np.sum(totalrain))
+
+#print(total_flow)
+
+#print(total_rain)
+
+print(np.array(total_water)/(res*res*gratextents[0]*gratextents[1]))
+print(np.diff(np.array(total_water)/(res*res*gratextents[0]*gratextents[1]),axis=0))
+
 plt.plot((np.array(total_flow)[::2]**2+np.array(total_flow)[1::2]**2)**0.5)
 plt.show()
 

@@ -57,10 +57,10 @@ for latindex in range(gratextents[0]):
         if interpdepth:
             # Implement some interpolation - constant surface height scheme here. Local tetration.
             interp_input = np.load(interppath+"/test"+str(latindex)+str(lonindex)+".npy")
-            output[2:-2:2,2:-2:2,2] = interp_input[2:-2,2:-2,2]+interp_input[2:-2,2:-2,0]-output[2:-2:2,2:-2:2,0]
-            output[3:-2:2,2:-2:2,2] = interp_input[2:-2,2:-2,2]+interp_input[2:-2,2:-2,0]-output[2:-2:2,2:-2:2,0]
-            output[2:-2:2,3:-2:2,2] = interp_input[2:-2,2:-2,2]+interp_input[2:-2,2:-2,0]-output[2:-2:2,2:-2:2,0]
-            output[3:-2:2,3:-2:2,2] = interp_input[2:-2,2:-2,2]+interp_input[2:-2,2:-2,0]-output[2:-2:2,2:-2:2,0]
+            output[2:-2:2,2:-2:2,2] = np.maximum(interp_input[2:-2,2:-2,2]+interp_input[2:-2,2:-2,0]-output[2:-2:2,2:-2:2,0],0)
+            output[3:-2:2,2:-2:2,2] = np.maximum(interp_input[2:-2,2:-2,2]+interp_input[2:-2,2:-2,0]-output[2:-2:2,2:-2:2,0],0)
+            output[2:-2:2,3:-2:2,2] = np.maximum(interp_input[2:-2,2:-2,2]+interp_input[2:-2,2:-2,0]-output[2:-2:2,2:-2:2,0],0)
+            output[3:-2:2,3:-2:2,2] = np.maximum(interp_input[2:-2,2:-2,2]+interp_input[2:-2,2:-2,0]-output[2:-2:2,2:-2:2,0],0)
         else:
             output[:,:,2] += GED
 

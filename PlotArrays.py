@@ -1,7 +1,7 @@
 #Plot arrays
 
 # User set parameters
-res = 45
+res = int(45)
 
 # Path to memory location for arrays of a particular resolution
 thisdir = "/home/handmer/Documents/Mars/water-flow/"
@@ -30,6 +30,7 @@ for latindex in range(gratextents[0]):
         graticule_space[:,:,5] = ((graticule_space[:,:,3])**2+(graticule_space[:,:,4])**2)**0.5
         #plt.imshow(graticule_space[1:-1,1:-1,5])
         #plt.show()
+
         #graticule_space[2:-2,2:-2,0] = graticule_space[2:-2,2:-2,2]
         graticule_space[2:-2,2:-2,0] = graticule_space[2:-2,2:-2,2]*graticule_space[2:-2,2:-2,1]
         #graticule_space[2:-2,2:-2,0] = (0.25*graticule_space[1:-3,1:-3,5]
@@ -43,8 +44,8 @@ for latindex in range(gratextents[0]):
                   int(res*lonindex/subsample):int(res*(lonindex+1)/subsample)] = graticule_space[2:-2,2:-2,0]
         #print([int(res*latindex/subsample),int(res*(latindex+1)/subsample)])
 
-# average volume per pixel. Should be about 95.5
-print(np.sum(big_array/(45*45*4*8)))
+# average volume per pixel. Should be normalized to 1
+print(np.sum(big_array/(res*res*4*8))*np.pi/300)
 
 print(np.min(big_array))
 
