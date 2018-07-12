@@ -11,14 +11,14 @@ inputpath = thisdir + "res"+str(res)+"/"
 
 gratextents = [4,8]
 
-timestep = 0.05 #This should vary as a function of res, too??
+timestep = 0.5 #This should vary as a function of res, too??
 
-precip = 0.5*gratextents[0]*res/720*timestep/0.05
+precip = 0.0015*720/(gratextents[0]*res)*timestep/0.05
 
 reset_depths = False
 GED = 150
 
-number_of_steps=2000
+number_of_steps=4000
 output_period = 50
 
 import numpy as np
