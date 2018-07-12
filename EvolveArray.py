@@ -14,12 +14,12 @@ gratextents = [4,8]
 timestep = 0.05 #This should vary as a function of res, too??
 
 # This seems to be leaky. How, why? I don't know. 
-precip = 0*1.5*gratextents[0]*res/720*timestep/0.05
+precip = 1.5*gratextents[0]*res/720*timestep/0.05
 
 reset_depths = False
 GED = 150
 
-number_of_steps=100
+number_of_steps=2
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -115,6 +115,8 @@ for i in range(number_of_steps):
             graticule_space[2:-2,:2,2] = ghostEWold[res*latindex:res*(latindex+1),(4*lonindex-2)%(4*gratextents[1]):(4*lonindex-2)%(4*gratextents[1])+2]
             graticule_space[2:-2,-2:,2] = ghostEWold[res*latindex:res*(latindex+1),(4*lonindex+4)%(4*gratextents[1]):(4*lonindex+4)%(4*gratextents[1])+2]
             
+            #total_water[-1] += np.sum(graticule_space[2:-2,2:-2,2]*graticule_space[2:-2,2:-2,1])
+
             # Compute flow for EW in place
             graticule_space[:,:-1,3] = timestep*np.diff(graticule_space[:,:,0] + graticule_space[:,:,2], axis = 1)
             
@@ -146,7 +148,7 @@ for i in range(number_of_steps):
             # update depth
             graticule_space[2:-2,2:-2,2] += graticule_space[2:-2,2:-2,8]
             total_flow[-1] += np.sum(np.abs(graticule_space[2:-2,2:-2,8]))
-            total_water[-1] += np.sum(graticule_space[2:-2,2:-2,2]*graticule_space[2:-2,2:-2,1])
+            #total_water[-1] += np.sum(graticule_space[2:-2,2:-2,2]*graticule_space[2:-2,2:-2,1])            
             
             # Note to self. Imagine an array like 
             # 0 0 1 0 0 0
@@ -163,7 +165,6 @@ for i in range(number_of_steps):
             # Determine correct evaporation level. Reusing layer 5 of graticule array.
             graticule_space[:,:,5] = np.minimum(graticule_space[:,:,2],precip)
             # Evaporate
-            #graticule_space[2:-2,2:-2,2] -= graticule_space[2:-2,2:-2,5]
             graticule_space[:,:,2] -= graticule_space[:,:,5]
             # Compute total volume by including metric, not including ghost zones
             total_evap += np.sum(graticule_space[2:-2,2:-2,5]*graticule_space[2:-2,2:-2,1])
@@ -171,6 +172,8 @@ for i in range(number_of_steps):
             # update ghost zones (new)
             ghostEWnew[res*latindex:res*(latindex+1),4*lonindex:4*lonindex+2] = graticule_space[2:-2,2:4,2]
             ghostEWnew[res*latindex:res*(latindex+1),4*lonindex+2:4*lonindex+4] = graticule_space[2:-2,-4:-2,2]
+
+            total_water[-1] += np.sum(graticule_space[2:-2,2:-2,2]*graticule_space[2:-2,2:-2,1])
 
             # save graticule
             np.save(inputpath+"/test"+str(latindex)+str(lonindex),graticule_space)
@@ -189,6 +192,8 @@ for i in range(number_of_steps):
         for lonindex in range(gratextents[1]):
             # Load graticule
             graticule_space = np.load(inputpath+"/test"+str(latindex)+str(lonindex)+".npy")
+
+            #total_water[-1] += np.sum(graticule_space[2:-2,2:-2,2]*graticule_space[2:-2,2:-2,1])
             
             # update ghost zones from old ghost zone 
             # (which was the new ghost zone from the previous time step)
@@ -204,10 +209,21 @@ for i in range(number_of_steps):
                 graticule_space[-2:,2:-2,2] = ghostNSold[4*latindex+4:4*latindex+6,res*lonindex:res*(lonindex+1)]
         
             # Rain including metric, including ghost zones
-            total_rain[-1] += np.sum(total_evap*(graticule_space[2:-2,2:-2,0]-minalt)*graticule_space[2:-2,2:-2,1]/totalaltsmetric)
+            rain_depth = total_evap*(graticule_space[:,:,0]-minalt)*graticule_space[:,:,1]/totalaltsmetric
+ 
+            # volume of water
+            total_rain[-1] += np.sum(rain_depth[2:-2,2:-2]*graticule_space[2:-2,2:-2,1])
             #total_rain[-1] += np.sum(total_evap*(graticule_space[2:-2,2:-2,0]-minalt)/totalalts)
-            graticule_space[:,:,2] += total_evap*(graticule_space[:,:,0]-minalt)*graticule_space[:,:,1]/totalaltsmetric
+            
+            #depth (convert by dividing by metric)
+            graticule_space[:,:,2] += rain_depth/graticule_space[:,:,1]
             #graticule_space[2:-2,2:-2,2] += total_evap*(graticule_space[2:-2,2:-2,0]-minalt)/totalalts
+            
+            #volume
+            total_water[-1] += np.sum(graticule_space[2:-2,2:-2,2]*graticule_space[2:-2,2:-2,1])
+
+            #print(np.sum(waterafterrain)-np.sum(waterbeforerain))
+            #print(np.sum(rain[2:-2,2:-2]*graticule_space[2:-2,2:-2,1]))
             
             # Compute flow for NS in place
             graticule_space[:-1,:,4] = timestep*np.diff(graticule_space[:,:,0] + graticule_space[:,:,2], axis = 0)
@@ -242,7 +258,7 @@ for i in range(number_of_steps):
             
             graticule_space[2:-2,2:-2,2] += graticule_space[2:-2,2:-2,8]
             total_flow[-1] += np.sum(np.abs(graticule_space[2:-2,2:-2,8]))
-            total_water[-1] += np.sum(graticule_space[2:-2,2:-2,2]*graticule_space[2:-2,2:-2,1])
+            #total_water[-1] += np.sum(graticule_space[2:-2,2:-2,2]*graticule_space[2:-2,2:-2,1])
 
             # update ghost zones (new)
             ghostNSnew[4*latindex:4*latindex+2,res*lonindex:res*(lonindex+1)] = graticule_space[2:4,2:-2,2]
@@ -260,7 +276,7 @@ for i in range(number_of_steps):
 
 #print(total_flow)
 
-#print(total_rain)
+print(np.array(total_rain)/(res*res*gratextents[0]*gratextents[1]))
 
 print(np.array(total_water)/(res*res*gratextents[0]*gratextents[1]))
 print(np.diff(np.array(total_water)/(res*res*gratextents[0]*gratextents[1]),axis=0))
