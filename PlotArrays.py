@@ -1,7 +1,7 @@
 #Plot arrays
 
 # User set parameters
-res = int(45*2)
+res = int(45*2**2)
 
 # Path to memory location for arrays of a particular resolution
 thisdir = "/home/handmer/Documents/Mars/water-flow/"
@@ -38,7 +38,7 @@ for latindex in range(gratextents[0]):
         #                                +0.25*graticule_space[1:-3,2:-2,5]
         #                                +0.25*graticule_space[2:-2,1:-3,5]
         #)*graticule_space[2:-2,2:-2,7]
-        graticule_space[2:-2,2:-2,0] = (graticule_space[2:-2,2:-2,3]**2 + graticule_space[2:-2,2:-2,4]**2)**0.5
+        #graticule_space[2:-2,2:-2,0] = (graticule_space[2:-2,2:-2,3]**2 + graticule_space[2:-2,2:-2,4]**2)**0.5
         #graticule_space[2:-2,2:-2,0] = graticule_space[2:-2,2:-2,5]
         big_array[int(res*latindex/subsample):int(res*(latindex+1)/subsample),
                   int(res*lonindex/subsample):int(res*(lonindex+1)/subsample)] = graticule_space[2:-2,2:-2,0]

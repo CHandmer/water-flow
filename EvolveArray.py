@@ -2,7 +2,7 @@
 # so that the normalization step has enough data to work with.
 
 # User set parameters
-res = int(45*2)
+res = int(45*2**2)
 
 # Path to memory location for arrays of a particular resolution
 thisdir = "/home/handmer/Documents/Mars/water-flow/"
@@ -13,13 +13,13 @@ gratextents = [4,8]
 
 timestep = 0.05 #This should vary as a function of res, too??
 
-precip = 1.5*gratextents[0]*res/720*timestep/0.05
+precip = 0.5*gratextents[0]*res/720*timestep/0.05
 
 reset_depths = False
 GED = 150
 
-number_of_steps=100
-output_period = 20
+number_of_steps=2000
+output_period = 50
 
 import numpy as np
 from matplotlib import pyplot as plt
