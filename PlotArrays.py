@@ -1,7 +1,7 @@
 #Plot arrays
 
 # User set parameters
-res = int(45)
+res = int(45*2)
 
 # Path to memory location for arrays of a particular resolution
 thisdir = "/home/handmer/Documents/Mars/water-flow/"
@@ -31,14 +31,14 @@ for latindex in range(gratextents[0]):
         #plt.imshow(graticule_space[1:-1,1:-1,5])
         #plt.show()
 
-        #graticule_space[2:-2,2:-2,0] = graticule_space[2:-2,2:-2,2]
-        graticule_space[2:-2,2:-2,0] = graticule_space[2:-2,2:-2,2]*graticule_space[2:-2,2:-2,1]
+        graticule_space[2:-2,2:-2,0] = graticule_space[2:-2,2:-2,2]
+        #graticule_space[2:-2,2:-2,0] = graticule_space[2:-2,2:-2,2]*graticule_space[2:-2,2:-2,1]
         #graticule_space[2:-2,2:-2,0] = (0.25*graticule_space[1:-3,1:-3,5]
         #                                +0.25*graticule_space[2:-2,2:-2,5]
         #                                +0.25*graticule_space[1:-3,2:-2,5]
         #                                +0.25*graticule_space[2:-2,1:-3,5]
         #)*graticule_space[2:-2,2:-2,7]
-        #graticule_space[2:-2,2:-2,0] = (graticule_space[2:-2,2:-2,3]**2 + graticule_space[2:-2,2:-2,4]**2)**0.5
+        graticule_space[2:-2,2:-2,0] = (graticule_space[2:-2,2:-2,3]**2 + graticule_space[2:-2,2:-2,4]**2)**0.5
         #graticule_space[2:-2,2:-2,0] = graticule_space[2:-2,2:-2,5]
         big_array[int(res*latindex/subsample):int(res*(latindex+1)/subsample),
                   int(res*lonindex/subsample):int(res*(lonindex+1)/subsample)] = graticule_space[2:-2,2:-2,0]
@@ -63,4 +63,4 @@ plt.show()
 
 
 
-# Something is generating more water. Also, something is generating a transient at the beginning of a restarted thingo. This is a worry.
+# Think about how to plot a water vs altitude histogram
