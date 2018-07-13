@@ -13,12 +13,12 @@ gratextents = [4,8]
 
 timestep = 0.5 #This should vary as a function of res, too??
 
-precip = 0.0015*720/(gratextents[0]*res)*timestep/0.05
+precip = 0.00015*720/(gratextents[0]*res)*timestep/0.5
 
 reset_depths = False
 GED = 150
 
-number_of_steps=4000
+number_of_steps=5
 output_period = 50
 
 import numpy as np
@@ -87,6 +87,7 @@ totalaltsmetric += -res*res*gratextents[0]*gratextents[1]*minalt*2/np.pi*1.00001
 total_flow = []
 total_rain = []
 total_water = []
+total_water_moment = []
 
 norm_factor = (res*res*gratextents[0]*gratextents[1])
 
@@ -94,7 +95,7 @@ print("[step, depth, flow, evap]")
 #loop time steps
 for i in range(number_of_steps):
     if i%output_period == 1:
-        print([i, total_water[-1]/norm_factor, total_flow[-1]/norm_factor, total_rain[-1]/norm_factor])
+        print([i, total_water[-1]/norm_factor, total_flow[-1]/norm_factor, total_rain[-1]/norm_factor, total_water_moment[-1]/total_water[-1]])
 
     # refresh ghost zones (begin the new time step with fresh space for old ghost zones)
     ghostEWold = ghostEWnew
@@ -106,6 +107,7 @@ for i in range(number_of_steps):
     total_flow.append(0)
     total_water.append(0)
     total_rain.append(0)
+    total_water_moment.append(0)
 
     # loop over graticules
     for latindex in range(gratextents[0]):
@@ -151,7 +153,8 @@ for i in range(number_of_steps):
             # update depth
             graticule_space[2:-2,2:-2,2] += graticule_space[2:-2,2:-2,8]
             total_flow[-1] += np.sum(np.abs(graticule_space[2:-2,2:-2,8]))
-            total_water[-1] += np.sum(graticule_space[2:-2,2:-2,2]*graticule_space[2:-2,2:-2,1])            
+            total_water[-1] += np.sum(graticule_space[2:-2,2:-2,2]*graticule_space[2:-2,2:-2,1])      
+            total_water_moment[-1] += np.sum(graticule_space[2:-2,2:-2,0]*graticule_space[2:-2,2:-2,1]*graticule_space[2:-2,2:-2,2])
             
             # Note to self. Imagine an array like 
             # 0 0 1 0 0 0
@@ -189,6 +192,7 @@ for i in range(number_of_steps):
     
     total_flow.append(0)
     total_water.append(0)
+    total_water_moment.append(0)
     
     # loop over graticules
     for latindex in range(gratextents[0]):
@@ -225,6 +229,7 @@ for i in range(number_of_steps):
             
             #volume
             total_water[-1] += np.sum(graticule_space[2:-2,2:-2,2]*graticule_space[2:-2,2:-2,1])
+            total_water_moment[-1] += np.sum(graticule_space[2:-2,2:-2,2]*graticule_space[2:-2,2:-2,1]*graticule_space[2:-2,2:-2,0])
 
             # Compute flow for NS in place
             graticule_space[:-1,:,4] = timestep*np.diff(graticule_space[:,:,0] + graticule_space[:,:,2], axis = 0)

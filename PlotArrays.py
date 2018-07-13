@@ -7,7 +7,7 @@ res = int(45*2**2)
 thisdir = "/home/handmer/Documents/Mars/water-flow/"
 
 inputpath = thisdir + "res"+str(res)+"/"
-#inputpath = thisdir + "res"+str(res)+"-fresh/"
+#inputpath = thisdir + "res"+str(res)+"-clean/"
 
 gratextents = [4,8]
 
@@ -22,11 +22,19 @@ big_array = np.zeros([int(res*gratextents[0]/subsample),int(res*gratextents[1]/s
 # Mola, metric, depth, flowEW, flowNS, positive flow, negative flow, norm
 graticule_space = np.zeros([res+4,res+4,9])
 
+depth_moment_1 = 0
+#total_heights = 0
+total_water = 0
+
 # loop over graticules
 for latindex in range(gratextents[0]):
     for lonindex in range(gratextents[1]):
         # Load graticule
         graticule_space = np.load(inputpath+"/test"+str(latindex)+str(lonindex)+".npy")
+        depth_moment_1 += np.sum((graticule_space[2:-2,2:-2,0])*graticule_space[2:-2,2:-2,1]*graticule_space[2:-2,2:-2,2])
+        #total_heights += np.sum(graticule_space[2:-2,2:-2,0])
+        total_water += np.sum(graticule_space[2:-2,2:-2,1]*graticule_space[2:-2,2:-2,2])
+
         graticule_space[:,:,5] = ((graticule_space[:,:,3])**2+(graticule_space[:,:,4])**2)**0.5
         #plt.imshow(graticule_space[1:-1,1:-1,5])
         #plt.show()
@@ -45,11 +53,13 @@ for latindex in range(gratextents[0]):
         #print([int(res*latindex/subsample),int(res*(latindex+1)/subsample)])
 
 # average volume per pixel. Should be normalized to 1
-print(np.sum(big_array/(res*res*4*8))*np.pi/300)
+#print(np.sum(big_array/(res*res*4*8))*np.pi/300)
+#print(np.min(big_array))
+#print(np.max(big_array))
 
-print(np.min(big_array))
-
-print(np.max(big_array))
+print(depth_moment_1/res**2)
+print(total_water/res**2)
+print(depth_moment_1/total_water)
 
 
 plt.figure(figsize = (20,40))
