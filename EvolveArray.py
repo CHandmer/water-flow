@@ -13,12 +13,12 @@ gratextents = [4,8]
 
 timestep = 0.5 #This should vary as a function of res, too??
 
-precip = 0.00015*720/(gratextents[0]*res)*timestep/0.5
+precip = 0.0005*720/(gratextents[0]*res)*timestep/0.5
 
 reset_depths = False
 GED = 150
 
-number_of_steps=5
+number_of_steps=10000
 output_period = 50
 
 import numpy as np
@@ -91,7 +91,7 @@ total_water_moment = []
 
 norm_factor = (res*res*gratextents[0]*gratextents[1])
 
-print("[step, depth, flow, evap]")
+print("[step, depth, flow, evap, water alt]")
 #loop time steps
 for i in range(number_of_steps):
     if i%output_period == 1:
@@ -219,7 +219,7 @@ for i in range(number_of_steps):
             # This is actually a volume
             rain_volume = total_evap*(graticule_space[:,:,0]-minalt)*graticule_space[:,:,1]/totalaltsmetric
             #rain_depth = total_evap*(graticule_space[:,:,0]-minalt)/totalalts
- 
+            
             # volume of water
             total_rain[-1] += np.sum(rain_volume[2:-2,2:-2])
             
