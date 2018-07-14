@@ -14,14 +14,14 @@
 # - delta from step to step
 
 # User set parameters
-skip = 2**5
+skip = 2**4
 res = int(5760/skip)
 
 # Path to memory location for arrays of a particular resolution
 thisdir = "/home/handmer/Documents/Mars/water-flow/"
 outputpath = thisdir+"res"+str(res)+"/"
 sourcepath = thisdir + "RawMola/"
-interppath = thisdir + "res90"#"res45-norain-converged"
+interppath = thisdir + "res180"#"res45-norain-converged"
 interpdepth = True
 
 # Data has been pre-sliced, originally derived from

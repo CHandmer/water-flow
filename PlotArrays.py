@@ -35,21 +35,20 @@ for latindex in range(gratextents[0]):
         #total_heights += np.sum(graticule_space[2:-2,2:-2,0])
         total_water += np.sum(graticule_space[2:-2,2:-2,1]*graticule_space[2:-2,2:-2,2])
 
-        graticule_space[:,:,5] = ((graticule_space[:,:,3])**2+(graticule_space[:,:,4])**2)**0.5
         #plt.imshow(graticule_space[1:-1,1:-1,5])
         #plt.show()
 
         #graticule_space[2:-2,2:-2,0] = graticule_space[2:-2,2:-2,2]
         #graticule_space[2:-2,2:-2,0] = graticule_space[2:-2,2:-2,2]*graticule_space[2:-2,2:-2,1]
-        #graticule_space[2:-2,2:-2,0] = (0.25*graticule_space[1:-3,1:-3,5]
-        #                                +0.25*graticule_space[2:-2,2:-2,5]
-        #                                +0.25*graticule_space[1:-3,2:-2,5]
-        #                                +0.25*graticule_space[2:-2,1:-3,5]
-        #)*graticule_space[2:-2,2:-2,7]
-        #graticule_space[2:-2,2:-2,0] = (graticule_space[2:-2,2:-2,3]**2 + graticule_space[2:-2,2:-2,4]**2)**0.5
+        graticule_space[2:-2,2:-2,0] = ((0.25*graticule_space[1:-3,1:-3,5]
+                                        +0.25*graticule_space[2:-2,2:-2,5]
+                                        +0.25*graticule_space[1:-3,2:-2,5]
+                                        +0.25*graticule_space[2:-2,1:-3,5]
+        )*graticule_space[2:-2,2:-2,7])**0.2
+        #graticule_space[2:-2,2:-2,0] = (graticule_space[2:-2,2:-2,3]**2 + graticule_space[2:-2,2:-2,4]**2)**0.2
         #graticule_space[2:-2,2:-2,0] = graticule_space[2:-2,2:-2,5]
         big_array[int(res*latindex/subsample):int(res*(latindex+1)/subsample),
-                  int(res*lonindex/subsample):int(res*(lonindex+1)/subsample)] = (graticule_space[2:-2,2:-2,0]+8142)*graticule_space[2:-2,2:-2,1]
+                  int(res*lonindex/subsample):int(res*(lonindex+1)/subsample)] = graticule_space[2:-2,2:-2,0]#(graticule_space[2:-2,2:-2,0]+8142)*graticule_space[2:-2,2:-2,1]
         #print([int(res*latindex/subsample),int(res*(latindex+1)/subsample)])
 
 # average volume per pixel. Should be normalized to 1
@@ -66,7 +65,8 @@ plt.figure(figsize = (20,40))
 plt.imshow(big_array)
 plt.show()
 
-#plt.imshow(np.load(inputpath+"/test"+str(1)+str(1)+".npy")[:,:,5])
+#plt.imshow(np.load(inputpath+"/test"+str(1)+str(0)+".npy")[:,:,5])
+#plt.imshow(big_array[180:360,180:360])
 #plt.show()
 
 #print(np.load(inputpath+"/test"+str(3)+str(4)+".npy")[21:26,21:26,2])
