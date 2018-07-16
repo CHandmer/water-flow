@@ -2,7 +2,8 @@
 # so that the normalization step has enough data to work with.
 
 # User set parameters
-res = int(45*2**2)
+res = int(45*2**4)
+print("res = " + str(res))
 
 # Path to memory location for arrays of a particular resolution
 thisdir = "/home/handmer/Documents/Mars/water-flow/"
@@ -13,12 +14,13 @@ gratextents = [4,8]
 
 timestep = 0.05 #Much bigger than 0.1 and the integrator becomes unstable.
 
+# This scales down to compensate for the longer path water takes to an ocean at higher resolution
 precip = 0.0015*720/(gratextents[0]*res)*timestep/0.05
 
 reset_depths = False
 GED = 150
 
-number_of_steps=1500
+number_of_steps=1
 output_period = 50
 
 import numpy as np

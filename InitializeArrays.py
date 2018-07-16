@@ -14,14 +14,16 @@
 # - delta from step to step
 
 # User set parameters
-skip = 2**4
+skip = 2**3
 res = int(5760/skip)
+print("res = " + str(res))
+
 
 # Path to memory location for arrays of a particular resolution
 thisdir = "/home/handmer/Documents/Mars/water-flow/"
 outputpath = thisdir+"res"+str(res)+"/"
 sourcepath = thisdir + "RawMola/"
-interppath = thisdir + "res180"#"res45-norain-converged"
+interppath = thisdir + "res360"#"res180"#"res90"#"res45-norain-converged"
 interpdepth = True
 
 # Data has been pre-sliced, originally derived from
@@ -56,11 +58,11 @@ for latindex in range(gratextents[0]):
 
         if interpdepth:
             # Implement some interpolation - constant surface height scheme here. Local tetration.
-            interp_input = np.load(interppath+"/test"+str(latindex)+str(lonindex)+".npy")
-            output[2:-2:2,2:-2:2,2] = np.maximum(interp_input[2:-2,2:-2,2]+interp_input[2:-2,2:-2,0]-output[2:-2:2,2:-2:2,0],0)
-            output[3:-2:2,2:-2:2,2] = np.maximum(interp_input[2:-2,2:-2,2]+interp_input[2:-2,2:-2,0]-output[2:-2:2,2:-2:2,0],0)
-            output[2:-2:2,3:-2:2,2] = np.maximum(interp_input[2:-2,2:-2,2]+interp_input[2:-2,2:-2,0]-output[2:-2:2,2:-2:2,0],0)
-            output[3:-2:2,3:-2:2,2] = np.maximum(interp_input[2:-2,2:-2,2]+interp_input[2:-2,2:-2,0]-output[2:-2:2,2:-2:2,0],0)
+            interp_input = np.load(interppath+"/test"+str(latindex)+str(lonindex)+".npy")#This generates unwanted water on steep, dry, slopes. 
+            output[2:-2:2,2:-2:2,2] = np.maximum(interp_input[2:-2,2:-2,2],0)#+interp_input[2:-2,2:-2,0]-output[2:-2:2,2:-2:2,0],0)
+            output[3:-2:2,2:-2:2,2] = np.maximum(interp_input[2:-2,2:-2,2],0)#+interp_input[2:-2,2:-2,0]-output[3:-2:2,2:-2:2,0],0)
+            output[2:-2:2,3:-2:2,2] = np.maximum(interp_input[2:-2,2:-2,2],0)#+interp_input[2:-2,2:-2,0]-output[2:-2:2,3:-2:2,0],0)
+            output[3:-2:2,3:-2:2,2] = np.maximum(interp_input[2:-2,2:-2,2],0)#+interp_input[2:-2,2:-2,0]-output[3:-2:2,3:-2:2,0],0)
         else:
             output[:,:,2] += GED
 

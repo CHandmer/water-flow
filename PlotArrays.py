@@ -1,7 +1,8 @@
 #Plot arrays
 
 # User set parameters
-res = int(45*2**2)
+res = int(45*2**4)
+print("res = " + str(res))
 
 # Path to memory location for arrays of a particular resolution
 thisdir = "/home/handmer/Documents/Mars/water-flow/"
@@ -33,19 +34,20 @@ for latindex in range(gratextents[0]):
         graticule_space = np.load(inputpath+"/test"+str(latindex)+str(lonindex)+".npy")
         depth_moment_1 += np.sum((graticule_space[2:-2,2:-2,0])*graticule_space[2:-2,2:-2,1]*graticule_space[2:-2,2:-2,2])
         #total_heights += np.sum(graticule_space[2:-2,2:-2,0])
-        total_water += np.sum(graticule_space[2:-2,2:-2,1]*graticule_space[2:-2,2:-2,2])
+        total_water += np.sum(graticule_space[2:-2,2:-2,2])#*graticule_space[2:-2,2:-2,1])
 
         #plt.imshow(graticule_space[1:-1,1:-1,5])
         #plt.show()
 
         #graticule_space[2:-2,2:-2,0] = graticule_space[2:-2,2:-2,2]
         #graticule_space[2:-2,2:-2,0] = graticule_space[2:-2,2:-2,2]*graticule_space[2:-2,2:-2,1]
-        graticule_space[2:-2,2:-2,0] = ((0.25*graticule_space[1:-3,1:-3,5]
-                                        +0.25*graticule_space[2:-2,2:-2,5]
-                                        +0.25*graticule_space[1:-3,2:-2,5]
-                                        +0.25*graticule_space[2:-2,1:-3,5]
-        )*graticule_space[2:-2,2:-2,7])**0.2
-        #graticule_space[2:-2,2:-2,0] = (graticule_space[2:-2,2:-2,3]**2 + graticule_space[2:-2,2:-2,4]**2)**0.2
+        #graticule_space[2:-2,2:-2,0] = ((0.25*graticule_space[1:-3,1:-3,5]
+        #                                +0.25*graticule_space[2:-2,2:-2,5]
+        #                                +0.25*graticule_space[1:-3,2:-2,5]
+        #                                +0.25*graticule_space[2:-2,1:-3,5]
+        #)*graticule_space[2:-2,2:-2,7])**0.2
+        #graticule_space[2:-2,2:-2,0] /= (10+graticule_space[2:-2,2:-2,2])
+        graticule_space[2:-2,2:-2,0] = (graticule_space[2:-2,2:-2,3]**2 + graticule_space[2:-2,2:-2,4]**2)**0.1
         #graticule_space[2:-2,2:-2,0] = graticule_space[2:-2,2:-2,5]
         big_array[int(res*latindex/subsample):int(res*(latindex+1)/subsample),
                   int(res*lonindex/subsample):int(res*(lonindex+1)/subsample)] = graticule_space[2:-2,2:-2,0]#(graticule_space[2:-2,2:-2,0]+8142)*graticule_space[2:-2,2:-2,1]
@@ -56,21 +58,29 @@ for latindex in range(gratextents[0]):
 #print(np.min(big_array))
 #print(np.max(big_array))
 
-print(depth_moment_1/res**2)
-print(total_water/res**2)
+#print(depth_moment_1/(32*res)**2)
+print(total_water/(32*res**2))
 print(depth_moment_1/total_water)
 
+#print(np.min(big_array))
+#print(np.max(big_array))
 
 plt.figure(figsize = (20,40))
 plt.imshow(big_array)
 plt.show()
 
-#plt.imshow(np.load(inputpath+"/test"+str(1)+str(0)+".npy")[:,:,5])
-#plt.imshow(big_array[180:360,180:360])
+#plt.imshow(np.load(inputpath+"/test"+str(0)+str(0)+".npy")[:,:,2])
+#plt.imshow(big_array[360:720+360,360:720+360])
 #plt.show()
+
+print(total_water)
+#print(np.sum(np.load(inputpath+"/test"+str(0)+str(0)+".npy")[2:-2,2:-2,2]))
 
 #print(np.load(inputpath+"/test"+str(3)+str(4)+".npy")[21:26,21:26,2])
 
 
 
-# Think about how to plot a water vs altitude histogram
+
+#for latindex in range(gratextents[0]):
+#    for lonindex in range(gratextents[1]):
+#        print([latindex, lonindex, 4*np.sum(np.load(thisdir + "res"+str(res)+"/"+"/test"+str(latindex)+str(lonindex)+".npy")[2:-2,2:-2,2])/np.sum(np.load(thisdir + "res"+str(2*res)+"/"+"/test"+str(latindex)+str(lonindex)+".npy")[2:-2,2:-2,2])])
