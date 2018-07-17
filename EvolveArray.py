@@ -2,7 +2,7 @@
 # so that the normalization step has enough data to work with.
 
 # User set parameters
-res = int(45*2**4)
+res = int(45*2**7)
 print("res = " + str(res))
 
 # Path to memory location for arrays of a particular resolution
@@ -21,7 +21,7 @@ reset_depths = False
 GED = 150
 
 number_of_steps=1
-output_period = 50
+output_period = 2
 
 import numpy as np
 from matplotlib import pyplot as plt

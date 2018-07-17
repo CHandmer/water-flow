@@ -14,7 +14,7 @@
 # - delta from step to step
 
 # User set parameters
-skip = 2**3
+skip = 2**0
 res = int(5760/skip)
 print("res = " + str(res))
 
@@ -23,7 +23,7 @@ print("res = " + str(res))
 thisdir = "/home/handmer/Documents/Mars/water-flow/"
 outputpath = thisdir+"res"+str(res)+"/"
 sourcepath = thisdir + "RawMola/"
-interppath = thisdir + "res360"#"res180"#"res90"#"res45-norain-converged"
+interppath = thisdir + "res2880"#"res1440"#"res720"#"res360"#"res180"#"res90"#"res45-norain-converged"
 interpdepth = True
 
 # Data has been pre-sliced, originally derived from
