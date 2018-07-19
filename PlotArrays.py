@@ -10,7 +10,7 @@ thisdir = "/home/handmer/Documents/Mars/water-flow/"
 inputpath = thisdir + "res"+str(res)+"/"
 #inputpath = thisdir + "res"+str(res)+"-clean/"
 
-gratextents = [4,8]
+gratextents = [1,1]
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -28,10 +28,10 @@ depth_moment_1 = 0
 total_water = 0
 
 # loop over graticules
-for latindex in range(1,2,1):#gratextents[0]):
-    for lonindex in range(1,2,1):#gratextents[1]):
+for latindex in range(gratextents[0]):
+    for lonindex in range(gratextents[1]):
         # Load graticule
-        graticule_space = np.load(inputpath+"/test"+str(latindex)+str(lonindex)+".npy")
+        graticule_space = np.load(inputpath+"/test"+str(2+latindex)+str(7+lonindex)+".npy")
         depth_moment_1 += np.sum((graticule_space[2:-2,2:-2,0])*graticule_space[2:-2,2:-2,1]*graticule_space[2:-2,2:-2,2])
         #total_heights += np.sum(graticule_space[2:-2,2:-2,0])
         total_water += np.sum(graticule_space[2:-2,2:-2,2])#*graticule_space[2:-2,2:-2,1])
@@ -41,13 +41,13 @@ for latindex in range(1,2,1):#gratextents[0]):
 
         #graticule_space[2:-2,2:-2,0] = graticule_space[2:-2,2:-2,2]
         #graticule_space[2:-2,2:-2,0] = graticule_space[2:-2,2:-2,2]*graticule_space[2:-2,2:-2,1]
-        graticule_space[2:-2,2:-2,0] = ((0.25*graticule_space[1:-3,1:-3,5]
-                                        +0.25*graticule_space[2:-2,2:-2,5]
-                                        +0.25*graticule_space[1:-3,2:-2,5]
-                                        +0.25*graticule_space[2:-2,1:-3,5]
-        )*graticule_space[2:-2,2:-2,7])**0.2
+        #graticule_space[2:-2,2:-2,0] = ((0.25*graticule_space[1:-3,1:-3,5]
+        #                                +0.25*graticule_space[2:-2,2:-2,5]
+        #                                +0.25*graticule_space[1:-3,2:-2,5]
+        #                                +0.25*graticule_space[2:-2,1:-3,5]
+        #)*graticule_space[2:-2,2:-2,7])**0.2
         #graticule_space[2:-2,2:-2,0] /= (10+graticule_space[2:-2,2:-2,2])
-        #graticule_space[2:-2,2:-2,0] = (graticule_space[2:-2,2:-2,3]**2 + graticule_space[2:-2,2:-2,4]**2)**0.1
+        graticule_space[2:-2,2:-2,0] = (graticule_space[2:-2,2:-2,3]**2 + graticule_space[2:-2,2:-2,4]**2)**0.1
         #graticule_space[2:-2,2:-2,0] = graticule_space[2:-2,2:-2,5]
         big_array[int(res*latindex/subsample):int(res*(latindex+1)/subsample),
                   int(res*lonindex/subsample):int(res*(lonindex+1)/subsample)] = graticule_space[2:-2,2:-2,2]#(graticule_space[2:-2,2:-2,0]+8142)*graticule_space[2:-2,2:-2,1]

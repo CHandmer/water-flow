@@ -20,7 +20,7 @@ precip = 0.0015*720/(gratextents[0]*res)*timestep/0.05
 reset_depths = False
 GED = 150
 
-number_of_steps=1
+number_of_steps=20
 output_period = 2
 
 import numpy as np
