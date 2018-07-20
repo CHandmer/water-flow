@@ -1,7 +1,7 @@
 #Plot arrays
 
 # User set parameters
-res = int(45*2**7)
+res = int(45*2**1)
 print("res = " + str(res))
 
 # Path to memory location for arrays of a particular resolution
@@ -10,7 +10,7 @@ thisdir = "/home/handmer/Documents/Mars/water-flow/"
 inputpath = thisdir + "res"+str(res)+"/"
 #inputpath = thisdir + "res"+str(res)+"-clean/"
 
-gratextents = [1,1]
+gratextents = [4,8]
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -31,7 +31,7 @@ total_water = 0
 for latindex in range(gratextents[0]):
     for lonindex in range(gratextents[1]):
         # Load graticule
-        graticule_space = np.load(inputpath+"/test"+str(2+latindex)+str(7+lonindex)+".npy")
+        graticule_space = np.load(inputpath+"/array"+str(latindex)+str(lonindex)+".npy")
         depth_moment_1 += np.sum((graticule_space[2:-2,2:-2,0])*graticule_space[2:-2,2:-2,1]*graticule_space[2:-2,2:-2,2])
         #total_heights += np.sum(graticule_space[2:-2,2:-2,0])
         total_water += np.sum(graticule_space[2:-2,2:-2,2])#*graticule_space[2:-2,2:-2,1])
@@ -50,7 +50,7 @@ for latindex in range(gratextents[0]):
         graticule_space[2:-2,2:-2,0] = (graticule_space[2:-2,2:-2,3]**2 + graticule_space[2:-2,2:-2,4]**2)**0.1
         #graticule_space[2:-2,2:-2,0] = graticule_space[2:-2,2:-2,5]
         big_array[int(res*latindex/subsample):int(res*(latindex+1)/subsample),
-                  int(res*lonindex/subsample):int(res*(lonindex+1)/subsample)] = graticule_space[2:-2,2:-2,2]#(graticule_space[2:-2,2:-2,0]+8142)*graticule_space[2:-2,2:-2,1]
+                  int(res*lonindex/subsample):int(res*(lonindex+1)/subsample)] = graticule_space[2:-2,2:-2,0]#(graticule_space[2:-2,2:-2,0]+8142)*graticule_space[2:-2,2:-2,1]
         #print([int(res*latindex/subsample),int(res*(latindex+1)/subsample)])
 
 # average volume per pixel. Should be normalized to 1
