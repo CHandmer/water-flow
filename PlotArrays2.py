@@ -1,7 +1,7 @@
 #Plot arrays
 
 # User set parameters
-zoom=2**6
+zoom=2**4
 res = int(45*zoom)
 print("res = " + str(res))
 
