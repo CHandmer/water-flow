@@ -23,7 +23,7 @@ def EvolveArray(path, resolution, convergence, steps, precipitation):
     precip = precipitation
 
     number_of_steps=steps
-    output_period = 10
+    output_period = 2
 
     # Create ghost zone arrays. EW, NS, old and new. Contain only depth information.
     # Each graticule has a two element ghost zone. So the ghost zone for NS work must be 4*gratextents[0] x res*gratextents[1] and EW must be gratextents[0]*res x 4*gratextents[1]
@@ -90,19 +90,17 @@ def EvolveArray(path, resolution, convergence, steps, precipitation):
     print("[step, depth, flow, evap, water alt]")
     #loop time steps
     for i in range(number_of_steps):
-        if i%output_period == 1:
-            print([i, total_water[-1]/norm_factor, total_flow[-1]/norm_factor, total_rain[-1]/norm_factor, total_water_moment[-1]/total_water[-1]])
-        if i>2:
+        if i>2
             if total_flow[-1]/total_flow[-3] > 1-conv:
                 print("flow converged")
                 #print("total flow:")
                 #print(total_flow[-10])
                 break
-            if i==number_of_steps-1:
-                print("flow didn't converge, try increasing number of steps")
-                print("total flow:")
-                print(total_flow[-10:])
-                break
+        if i==number_of_steps-1:
+            print("flow didn't converge, try increasing number of steps")
+            print("total flow:")
+            print(total_flow[-10:])
+            break
         
 
         # refresh ghost zones (begin the new time step with fresh space for old ghost zones)
@@ -270,6 +268,10 @@ def EvolveArray(path, resolution, convergence, steps, precipitation):
                 np.save(inputpath+"/array"+str(latindex)+str(lonindex),graticule_space)
 
         total_rain.append(total_evap)
+
+        if i%output_period == 0:
+            print([i, 0.5*np.pi*total_water[-1]/norm_factor, total_flow[-1]/norm_factor, total_rain[-1]/norm_factor, total_water_moment[-1]/total_water[-1]])
+
 
     
 
