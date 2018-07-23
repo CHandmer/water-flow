@@ -6,9 +6,9 @@ License: CC-SA
 
 System requirements:
 
->120 gigs free HD space. Yes, 120 gigs.
->8 gigs of ram.
->At least once processor.
+\>120 gigs free HD space. Yes, 120 gigs.
+\>8 gigs of ram.
+\>At least one processor.
 
 
 Instructions for use:
