@@ -7,6 +7,8 @@ print("res = " + str(res))
 
 colors = 1
 
+output_grid = False
+
 # Path to memory location for arrays of a particular resolution
 thisdir = "/home/handmer/Documents/Mars/water-flow/"
 
@@ -46,44 +48,110 @@ def MyHSB2RGBfunc2(hue, sat, bri):
     totalsat = np.array([hueav for i in range(3)])
     return bri*(sat*hue + (1-sat)*totalsat)
 
-for latindex in range(4):
-    for lonindex in range(8):
-        print("writing: " + str(latindex) + "," + str(lonindex))
-        place = [latindex,lonindex]
+maxtotalflow = 0
+maxrelief = 0
 
-        rawdata = np.load(inputpath+"/array"+str(place[0])+str(place[1])+".npy")[2:-2,2:-2]
+if output_grid:
+    # Set normalizers
+    for latindex in range(4):
+        for lonindex in range(8):
+            print("reading: " + str(latindex) + "," + str(lonindex))
+            place = [latindex,lonindex]
+            
+            rawdata = np.load(inputpath+"/array"+str(place[0])+str(place[1])+".npy")[2:-2,2:-2]
+            
+            mola = rawdata[:,:,0]
+            #depth = rawdata[:,:,2]
+            #flowNS2 = np.gradient(mola+depth, axis=0)
+            flowNS = rawdata[:,:,3]
+            #flowEW2 = np.gradient(mola+depth, axis=1)
+            flowEW = rawdata[:,:,4]
+            #flownorm = rawdata[:,:,7]
+            
+            totalflow = (flowNS**2+flowEW**2)**0.5
+            maxtotalflow = np.maximum(np.max(totalflow),maxtotalflow)
+            #totalflownorm = totalflow/np.max(totalflow)
+            #flowdir = np.arctan2(flowNS2,flowEW2)/(2*np.pi)
+            
+            relief = np.gradient(mola, axis=0) + np.gradient(mola, axis=1)
+            maxrelief = np.maximum(np.max(relief),maxrelief)
+            #reliefnorm = relief/np.max(relief)
+            
+    print("maxtotalflow: " + str(maxtotalflow))
+    print("maxrelief: " + str(maxrelief))
 
-        mola = rawdata[:,:,0]
-        depth = rawdata[:,:,2]
-        flowNS2 = np.gradient(mola+depth, axis=0)
-        flowNS = rawdata[:,:,3]
-        flowEW2 = np.gradient(mola+depth, axis=1)
-        flowEW = rawdata[:,:,4]
-        flownorm = rawdata[:,:,7]
+    for latindex in range(4):
+        for lonindex in range(8):
+            print("writing: " + str(latindex) + "," + str(lonindex))
+            place = [latindex,lonindex]
+            
+            rawdata = np.load(inputpath+"/array"+str(place[0])+str(place[1])+".npy")[2:-2,2:-2]
+
+            mola = rawdata[:,:,0]
+            depth = rawdata[:,:,2]
+            flowNS2 = np.gradient(mola+depth, axis=0)
+            flowNS = rawdata[:,:,3]
+            flowEW2 = np.gradient(mola+depth, axis=1)
+            flowEW = rawdata[:,:,4]
+            flownorm = rawdata[:,:,7]
+            
+            totalflow = (flowNS**2+flowEW**2)**0.5
+            totalflownorm = totalflow/maxtotalflow#np.max(totalflow)
+            flowdir = np.arctan2(flowNS2,flowEW2)/(2*np.pi)
+            
+            relief = np.gradient(mola, axis=0) + np.gradient(mola, axis=1)
+            reliefnorm = relief/maxrelief#np.max(relief)
         
-        totalflow = (flowNS**2+flowEW**2)**0.5
-        totalflownorm = totalflow/np.max(totalflow)
-        flowdir = np.arctan2(flowNS2,flowEW2)/(2*np.pi)
-        
-        relief = np.gradient(mola, axis=0) + np.gradient(mola, axis=1)
-        reliefnorm = relief/np.max(relief)
-        
-        relief2 = np.gradient(mola+depth, axis=0) + np.gradient(mola+depth, axis=1)
-        relief2norm = relief2/np.max(relief2)
+            #relief2 = np.gradient(mola+depth, axis=0) + np.gradient(mola+depth, axis=1)
+            #relief2norm = relief2/np.max(relief2)
 
-        steepness = (np.gradient(mola, axis=0)**2 + np.gradient(mola, axis=1)**2)**0.5
-        steepnessnorm = steepness/np.max(steepness)
+            #steepness = (np.gradient(mola, axis=0)**2 + np.gradient(mola, axis=1)**2)**0.5
+            #steepnessnorm = steepness/np.max(steepness)
+            if colors == 1:
+                name = "colors"
+            else:
+                name = "blues"
 
-        im.imsave("colors720/image"+str(latindex)+str(lonindex)+".png",
-                  np.array([[MyHSB2RGBfunc(0.9-0.7*np.tanh(0.01*depth[i,j]),
-                                           1-np.tanh(100*totalflownorm[i,j]),
-                                           0.5+0.4*np.tanh(np.tanh(10*reliefnorm[i,j])+np.tanh(100*totalflownorm[i,j])))*(1-np.tanh(colors*0.1*depth[i,j])) + 
-                             MyHSB2RGBfunc2(0.5+flowdir[i,j],
-                                            1-np.tanh(50*totalflownorm[i,j]),
-                                            0.5+0.4*np.tanh(np.tanh(10*reliefnorm[i,j])+np.tanh(100*totalflownorm[i,j])))*np.tanh(colors*0.1*depth[i,j])
-                             for j in range(flowdir.shape[0])] 
-                            for i in range(flowdir.shape[1])]))
+            im.imsave(name+str(res)+"/imageshallow"+str(latindex)+str(lonindex)+".png",
+                      np.array([[MyHSB2RGBfunc(0.9-0.7*np.tanh(1.0*depth[i,j]),
+                                               1-np.tanh(50*totalflownorm[i,j]),
+                                               0.5+0.4*np.tanh(np.tanh(10*reliefnorm[i,j])+np.tanh(100*totalflownorm[i,j])))*(1-np.tanh(colors*1.0*depth[i,j])) + 
+                                 MyHSB2RGBfunc2(0.5+flowdir[i,j],
+                                                1-np.tanh(50*totalflownorm[i,j]),
+                                                0.5+0.4*np.tanh(np.tanh(10*reliefnorm[i,j])+np.tanh(100*totalflownorm[i,j])))*np.tanh(colors*1.0*depth[i,j])
+                                 for j in range(flowdir.shape[0])] 
+                                for i in range(flowdir.shape[1])]))
 
+else:
+
+    place = [3,3]
+    
+    rawdata = np.load(inputpath+"/array"+str(place[0])+str(place[1])+".npy")[2:-2,2:-2]
+
+    mola = rawdata[:,:,0]
+    depth = rawdata[:,:,2]
+    flowNS2 = np.gradient(mola+depth, axis=0)
+    flowNS = rawdata[:,:,3]
+    flowEW2 = np.gradient(mola+depth, axis=1)
+    flowEW = rawdata[:,:,4]
+    flownorm = rawdata[:,:,7]
+    
+    totalflow = (flowNS**2+flowEW**2)**0.5
+    totalflownorm = totalflow/np.max(totalflow)
+    flowdir = np.arctan2(flowNS2,flowEW2)/(2*np.pi)
+    
+    relief = np.gradient(mola, axis=0) + np.gradient(mola, axis=1)
+    reliefnorm = relief/np.max(relief)
+    
+    im.imsave("test.png",
+              np.array([[MyHSB2RGBfunc(0.9-0.7*np.tanh(1.0*depth[i,j]),
+                                       1-np.tanh(50*totalflownorm[i,j]),
+                                       0.5+0.4*np.tanh(np.tanh(10*reliefnorm[i,j])+np.tanh(100*totalflownorm[i,j])))*(1-np.tanh(colors*1.0*depth[i,j])) + 
+                         MyHSB2RGBfunc2(0.5+flowdir[i,j],
+                                        1-np.tanh(50*totalflownorm[i,j]),
+                                        0.5+0.4*np.tanh(np.tanh(10*reliefnorm[i,j])+np.tanh(100*totalflownorm[i,j])))*np.tanh(colors*1.0*depth[i,j])
+                         for j in range(flowdir.shape[0])] 
+                        for i in range(flowdir.shape[1])]))
 
 
 
