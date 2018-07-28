@@ -1,18 +1,20 @@
 #Plot arrays
 
 # User set parameters
-zoom=2**4
+zoom=2**7
 res = int(45*zoom)
 print("res = " + str(res))
 
 colors = 1
 
-output_grid = False
+output_grid = True
 
 # Path to memory location for arrays of a particular resolution
 thisdir = "/home/handmer/Documents/Mars/water-flow/"
 
 inputpath = thisdir + "res"+str(res)+"/"
+
+overflowpath = "/media/handmer/80D0-BABE/MarsWaterFlow/"
 
 import numpy as np
 from matplotlib import pyplot as plt
