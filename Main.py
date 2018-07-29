@@ -1,6 +1,6 @@
 #This script calls all the relevant python functions. Set these two parameters for the local path and desired global equivalent depth. 
 
-localpath = "/home/handmer/Documents/Mars/water-flow/"
+localpath = "./"
 # These parameters result in a big northern ocean and lots of lakes, with a number of fluvial canyons entirely flooded. Perhaps half the water is a better starting point?
 # A higher degree of precipitation actually leads to more lakes and a smaller ocean.
 global_equivalent_depth = 120 #150
@@ -11,7 +11,7 @@ precipitation_per_step = 0.0015
 
 #Create directory structure.
 import subprocess
-bashCommand = "mkdir res45 res90 res180 res360 res720 res1440 res2880 res5760"
+bashCommand = "mkdir -p res45 res90 res180 res360 res720 res1440 res2880 res5760"
 subprocess.check_output(bashCommand, shell=True)
 
 import InitializeArrayFunction

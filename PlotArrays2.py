@@ -17,6 +17,8 @@ inputpath = thisdir + "res"+str(res)+"/"
 overflowpath = "/media/handmer/80D0-BABE/MarsWaterFlow/"
 
 import numpy as np
+import matplotlib
+matplotlib.use('TkAgg')
 from matplotlib import pyplot as plt
 from matplotlib import image as im
 import pandas as pd
