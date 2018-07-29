@@ -34,4 +34,4 @@ When the code runs, it spits out a variety of numbers corresponding to depth, fl
 
 Where is the island in the Hellas basin?
 
-A popular trope of Mars literature, including Blue Mars (Kim Stanley Robinson) and Ilium (Dan Simmons) is that there is a rise in the middle of the Hellas basin that could be an island. Unfortunately this is an error on early (pre MOLA) maps because of a mass concentration the crust under Hellas. So there's no islands in Hellas. There is a nice one in Gale Crater though, which the Curiosity Rover is currently climbing up.
+A popular trope of Mars literature, including Blue Mars (Kim Stanley Robinson) and Ilium (Dan Simmons) is that there is a rise in the middle of the Hellas basin that could be an island. Unfortunately this is an error on early (pre MOLA) maps because of a mass concentration the crust under Hellas. So there is no big island in the middle of Hellas. There could be some small ones, and there is a nice one in Gale Crater, which the Curiosity Rover is currently climbing up.
