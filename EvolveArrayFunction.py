@@ -1,6 +1,7 @@
 #This is a function that takes as arguments the resolution it is working with, and evolves a given array until the flow converges to a given level, or it runs out of steps.
 import numpy as np
 import matplotlib
+matplotlib.use('TkAgg')
 from matplotlib import pyplot as plt
 
 def EvolveArray(path, resolution, convergence, steps, precipitation):
