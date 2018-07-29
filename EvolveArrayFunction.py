@@ -1,5 +1,6 @@
 #This is a function that takes as arguments the resolution it is working with, and evolves a given array until the flow converges to a given level, or it runs out of steps.
 import numpy as np
+import matplotlib
 from matplotlib import pyplot as plt
 
 def EvolveArray(path, resolution, convergence, steps, precipitation):
@@ -90,7 +91,7 @@ def EvolveArray(path, resolution, convergence, steps, precipitation):
     print("[step, depth, flow, evap, water alt]")
     #loop time steps
     for i in range(number_of_steps):
-        if i>2
+        if i>2:
             if total_flow[-1]/total_flow[-3] > 1-conv:
                 print("flow converged")
                 #print("total flow:")
