@@ -5,9 +5,9 @@ zoom=2**7
 res = int(45*zoom)
 print("res = " + str(res))
 
-colors = 1
+colors = 0
 
-output_grid = True
+output_grid = False
 
 # Path to memory location for arrays of a particular resolution
 thisdir = "/home/handmer/Documents/Mars/water-flow/"
@@ -128,9 +128,12 @@ if output_grid:
 
 else:
 
-    place = [3,3]
+    #place = [3,3]
     
-    rawdata = np.load(inputpath+"/array"+str(place[0])+str(place[1])+".npy")[2:-2,2:-2]
+    #rawdata = np.load(inputpath+"/array"+str(place[0])+str(place[1])+".npy")[2:-2,2:-2]
+
+    inputpath = "/home/handmer/Documents/Mars/water-flow/"
+    rawdata = np.load(inputpath+"/gale_"+str(30.0)+"_"+str(0.0)+"_"+str(0)+".npy")
 
     mola = rawdata[:,:,0]
     depth = rawdata[:,:,2]
@@ -143,19 +146,19 @@ else:
     totalflow = (flowNS**2+flowEW**2)**0.5
     totalflownorm = totalflow/np.max(totalflow)
     flowdir = np.arctan2(flowNS2,flowEW2)/(2*np.pi)
-    
+
     relief = np.gradient(mola, axis=0) + np.gradient(mola, axis=1)
     reliefnorm = relief/np.max(relief)
     
-    im.imsave("test.png",
+    im.imsave("gale.png",
               np.array([[MyHSB2RGBfunc(0.9-0.7*np.tanh(1.0*depth[i,j]),
                                        1-np.tanh(50*totalflownorm[i,j]),
                                        0.5+0.4*np.tanh(np.tanh(10*reliefnorm[i,j])+np.tanh(100*totalflownorm[i,j])))*(1-np.tanh(colors*1.0*depth[i,j])) + 
                          MyHSB2RGBfunc2(0.5+flowdir[i,j],
                                         1-np.tanh(50*totalflownorm[i,j]),
                                         0.5+0.4*np.tanh(np.tanh(10*reliefnorm[i,j])+np.tanh(100*totalflownorm[i,j])))*np.tanh(colors*1.0*depth[i,j])
-                         for j in range(flowdir.shape[0])] 
-                        for i in range(flowdir.shape[1])]))
+                         for j in range(2,flowdir.shape[1]-2)] 
+                        for i in range(2,flowdir.shape[0]-2)]))
 
 
 
