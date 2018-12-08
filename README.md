@@ -21,6 +21,15 @@ Instructions for use:
 - Run main with python 3. This will create subdirectories in which to save preliminary results, and then sequentially run the water flow simulation at higher and higher frequencies. On my c. 2011 laptop, it took about 3 days to run the whole thing. 
 - When the data is run, use PlotArrays.py to generate and save pngs of each of 32 subsections of the planet, then assemble them/print them as you see fit. Experimentation on plotting the rich dataset is encouraged, and several demo color maps are given.
 
+
+Future (unscheduled) planned improvements
+- Increase resolution using HRSC dataset: https://astrogeology.usgs.gov/search/map/Mars/Topography/HRSC_MOLA_Blend/Mars_HRSC_MOLA_BlendDEM_Global_200mp_v2
+- Improve precipitation model to include prevailing wind direction and snow.
+- Provide a temperature sensitive vegetation model in a plot option. 
+- Develop an erosion model.
+Latest blog: https://caseyhandmer.wordpress.com/2018/11/29/mars-global-hydrology-at-full-mola-resolution/ 
+
+
 What is this?
 
 Mars Global Surveyor, a NASA mission flown to Mars, carried the Mars Orbital Laser Altimeter instrument. It produced a simply eye-watering dataset of altitudes all over Mars, with a resolution of about 460m. This simulation is a quick and dirty way to simulate what rivers and oceans might look like on Mars if it were terraformed.
