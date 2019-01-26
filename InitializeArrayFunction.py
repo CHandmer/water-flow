@@ -2,6 +2,8 @@
 
 # This script is modified to increase the ghost zone width from 1 to 2, so that the normalization process works better. It also adds one more layer, to contain the overall delta.
 
+# Now running on a 7x14 grid of 7621 pixels
+
 # These arrays are 4+5760/2^n (n = 1, 2, ..., 7) x 9ish, contain
 # - MOLA topo data (double)
 # - metric (sin latitude)
@@ -15,23 +17,25 @@
 
 #from PIL import Image
 import numpy as np
-import matplotlib
-matplotlib.use('TkAgg')
-import pandas as pd
-from matplotlib import pyplot as plt
+#import matplotlib
+#matplotlib.use('TkAgg')
+#import pandas as pd
+#from matplotlib import pyplot as plt
 
 def InitializeArrays(path,resolution,initialdepth):
     res = resolution
     print("res = " + str(res))
 
-    skip = int(5760/res)
+    skip = int(np.round(7621/res))
 
     # Path to memory location for arrays of a particular resolution
     thisdir = path
     outputpath = thisdir+"res"+str(res)+"/"
-    sourcepath = thisdir + "RawMola/"
-    interppath = thisdir + "res"+str(int(res/2))#"res2880"#"res1440"#"res720"#"res360"#"res180"#"res90"#"res45-norain-converged"
-    if res==45:
+    sourcepath = thisdir + "output_dir/"
+    resdiv = int(np.log2(np.round(7621/res)))
+    interpres = int(np.round(7621/2**(resdiv+1)))
+    interppath = thisdir + "res"+str(interpres)#"res2880"#"res1440"#"res720"#"res360"#"res180"#"res90"#"res45-norain-converged"
+    if res==60:
         interpdepth = False
     else:
         interpdepth = True
@@ -39,7 +43,7 @@ def InitializeArrays(path,resolution,initialdepth):
     # Data has been pre-sliced, originally derived from
     # https://astrogeology.usgs.gov/search/details/Mars/GlobalSurveyor/MOLA/Mars_MGS_MOLA_DEM_mosaic_global_463m/cub
     # and sliced into 32 bits
-    gratextents = [4,8]
+    gratextents = [7,14]
 
     # Initialize with global equivalent depth (GED) in meters
     GED = initialdepth
@@ -54,8 +58,10 @@ def InitializeArrays(path,resolution,initialdepth):
 
             output *= 0.0
 
-            output[2:-2,2:-2,0] = np.loadtxt(sourcepath+"MarsMola"+str(latindex)+"-"+str(lonindex)+".csv", delimiter = ",")[int(skip/2)::skip,int(skip/2)::skip]-2.0**15
+            #output[2:-2,2:-2,0] = np.loadtxt(sourcepath+"MarsMola"+str(latindex)+"-"+str(lonindex)+".csv", delimiter = ",")[int(skip/2)::skip,int(skip/2)::skip]-2.0**15
 
+            output[2:-2,2:-2,0] = np.load(sourcepath+"grat_"+str(lonindex)+"_"+str(latindex)+".npy")[int(skip/2)::skip,int(skip/2)::skip]
+            
             metricvalues = np.sin([np.pi*(i+0.5)/(res*gratextents[0]) for i in range(res*gratextents[0])][latindex*res:(latindex+1)*res])
 
             for i in range(output.shape[1]-4):
@@ -63,41 +69,46 @@ def InitializeArrays(path,resolution,initialdepth):
 
             if interpdepth:
                 # This interpolation scheme, while creating slightly bumpy ocean, avoids the creation of huge quantities of unwanted water on dry slopes
-                interp_input = np.load(interppath+"/array"+str(latindex)+str(lonindex)+".npy")#This generates unwanted water on steep, dry, slopes. 
-                output[2:-2:2,2:-2:2,2] = np.maximum(interp_input[2:-2,2:-2,2],0)#+interp_input[2:-2,2:-2,0]-output[2:-2:2,2:-2:2,0],0)
-                output[3:-2:2,2:-2:2,2] = np.maximum(interp_input[2:-2,2:-2,2],0)#+interp_input[2:-2,2:-2,0]-output[3:-2:2,2:-2:2,0],0)
-                output[2:-2:2,3:-2:2,2] = np.maximum(interp_input[2:-2,2:-2,2],0)#+interp_input[2:-2,2:-2,0]-output[2:-2:2,3:-2:2,0],0)
-                output[3:-2:2,3:-2:2,2] = np.maximum(interp_input[2:-2,2:-2,2],0)#+interp_input[2:-2,2:-2,0]-output[3:-2:2,3:-2:2,0],0)
+                interp_input = np.load(interppath+"/array_"+str(latindex)+"_"+str(lonindex)+".npy")#This generates unwanted water on steep, dry, slopes.
+                # Have to deal with non-perfect nesting. A bit of slop over will disappear with time.
+                dims0 = output[2:-2:2,2:-2:2,2].shape
+                dims1 = output[3:-2:2,2:-2:2,2].shape
+                dims2 = output[2:-2:2,3:-2:2,2].shape
+                dims3 = output[3:-2:2,3:-2:2,2].shape
+                output[2:-2:2,2:-2:2,2] = np.maximum(interp_input[2:2+dims0[0],2:2+dims0[1],2],0)
+                output[3:-2:2,2:-2:2,2] = np.maximum(interp_input[2:2+dims1[0],2:2+dims1[1],2],0)
+                output[2:-2:2,3:-2:2,2] = np.maximum(interp_input[2:2+dims2[0],2:2+dims2[1],2],0)
+                output[3:-2:2,3:-2:2,2] = np.maximum(interp_input[2:2+dims3[0],2:2+dims3[1],2],0)
             else:
                 output[:,:,2] += GED
                 
-            np.save(outputpath+"/array"+str(latindex)+str(lonindex),output)
+            np.save(outputpath+"/array_"+str(latindex)+"_"+str(lonindex),output)
 
     # reload various files to fill in ghost zone edges
     # fix it horizontally first, then vertically in a second pass
     print("Completing ghost zones")
     for latindex in range(gratextents[0]):
         for lonindex in range(gratextents[1]):
-            output = np.load(outputpath+"/array"+str(latindex)+str(lonindex)+".npy")
-            output[2:-2,:2] = np.load(outputpath+"/array"+str(latindex)+str((lonindex-1)%gratextents[1])+".npy")[2:-2,-4:-2]
-            output[2:-2,-2:] = np.load(outputpath+"/array"+str(latindex)+str((lonindex+1)%gratextents[1])+".npy")[2:-2,2:4]
-            np.save(outputpath+"/array"+str(latindex)+str(lonindex),output)
+            output = np.load(outputpath+"/array_"+str(latindex)+"_"+str(lonindex)+".npy")
+            output[2:-2,:2] = np.load(outputpath+"/array_"+str(latindex)+"_"+str((lonindex-1)%gratextents[1])+".npy")[2:-2,-4:-2]
+            output[2:-2,-2:] = np.load(outputpath+"/array_"+str(latindex)+"_"+str((lonindex+1)%gratextents[1])+".npy")[2:-2,2:4]
+            np.save(outputpath+"/array_"+str(latindex)+"_"+str(lonindex),output)
     # fix vertically
     for latindex in range(gratextents[0]):
         for lonindex in range(gratextents[1]):
-            output = np.load(outputpath+"/array"+str(latindex)+str(lonindex)+".npy")
+            output = np.load(outputpath+"/array_"+str(latindex)+"_"+str(lonindex)+".npy")
             if latindex == 0:
                 # north pole case. replicate previous line, and no water will flow either way.
                 output[0] = output[2]
                 output[1] = output[2]
             else:
-                output[:2] = np.load(outputpath+"/array"+str(latindex-1)+str(lonindex)+".npy")[-4:-2]
+                output[:2] = np.load(outputpath+"/array_"+str(latindex-1)+"_"+str(lonindex)+".npy")[-4:-2]
             if latindex == gratextents[0]-1:
                 #south pole case. replicate polar line, no water will flow either way
                 output[-1] = output[-3]
                 output[-2] = output[-3]
             else:
-                output[-2:] = np.load(outputpath+"/array"+str(latindex+1)+str(lonindex)+".npy")[2:4]
-            np.save(outputpath+"/array"+str(latindex)+str(lonindex),output)
+                output[-2:] = np.load(outputpath+"/array_"+str(latindex+1)+"_"+str(lonindex)+".npy")[2:4]
+            np.save(outputpath+"/array_"+str(latindex)+"_"+str(lonindex),output)
     print("Initialization complete")
 

@@ -1,8 +1,8 @@
 #This is a function that takes as arguments the resolution it is working with, and evolves a given array until the flow converges to a given level, or it runs out of steps.
 import numpy as np
-import matplotlib
-matplotlib.use('TkAgg')
-from matplotlib import pyplot as plt
+#import matplotlib
+#matplotlib.use('TkAgg')
+#from matplotlib import pyplot as plt
 
 def EvolveArray(path, resolution, convergence, steps, precipitation):
     
@@ -17,7 +17,7 @@ def EvolveArray(path, resolution, convergence, steps, precipitation):
 
     inputpath = thisdir + "res"+str(res)+"/"
 
-    gratextents = [4,8]
+    gratextents = [7,14]
 
     timestep = 0.05 #Much bigger than 0.1 and the integrator becomes unstable.
 
@@ -66,7 +66,7 @@ def EvolveArray(path, resolution, convergence, steps, precipitation):
     totalaltsmetric = 0
     for latindex in range(gratextents[0]):
         for lonindex in range(gratextents[1]):
-            graticule_space = np.load(inputpath+"/array"+str(latindex)+str(lonindex)+".npy")
+            graticule_space = np.load(inputpath+"/array_"+str(latindex)+"_"+str(lonindex)+".npy")
             ghostNSnew[4*latindex:4*latindex+2,res*lonindex:res*(lonindex+1)] = graticule_space[2:4,2:-2,2]
             ghostNSnew[4*latindex+2:4*latindex+4,res*lonindex:res*(lonindex+1)] = graticule_space[-4:-2,2:-2,2]
             ghostEWnew[res*latindex:res*(latindex+1),4*lonindex:4*lonindex+2] = graticule_space[2:-2,2:4,2]
@@ -121,7 +121,7 @@ def EvolveArray(path, resolution, convergence, steps, precipitation):
         for latindex in range(gratextents[0]):
             for lonindex in range(gratextents[1]):
                 # Load graticule
-                graticule_space = np.load(inputpath+"/array"+str(latindex)+str(lonindex)+".npy")
+                graticule_space = np.load(inputpath+"/array_"+str(latindex)+"_"+str(lonindex)+".npy")
             
                 # update ghost zones from old ghost zone 
                 # (which was the new ghost zone from the previous time step)
@@ -186,7 +186,7 @@ def EvolveArray(path, resolution, convergence, steps, precipitation):
                 ghostEWnew[res*latindex:res*(latindex+1),4*lonindex+2:4*lonindex+4] = graticule_space[2:-2,-4:-2,2]
 
                 # save graticule
-                np.save(inputpath+"/array"+str(latindex)+str(lonindex),graticule_space)
+                np.save(inputpath+"/array_"+str(latindex)+"_"+str(lonindex),graticule_space)
 
 
 
@@ -202,7 +202,7 @@ def EvolveArray(path, resolution, convergence, steps, precipitation):
         for latindex in range(gratextents[0]):
             for lonindex in range(gratextents[1]):
                 # Load graticule
-                graticule_space = np.load(inputpath+"/array"+str(latindex)+str(lonindex)+".npy")
+                graticule_space = np.load(inputpath+"/array_"+str(latindex)+"_"+str(lonindex)+".npy")
 
                 # update ghost zones from old ghost zone 
                 # (which was the new ghost zone from the previous time step)
@@ -267,7 +267,7 @@ def EvolveArray(path, resolution, convergence, steps, precipitation):
                 ghostNSnew[4*latindex+2:4*latindex+4,res*lonindex:res*(lonindex+1)] = graticule_space[-4:-2,2:-2,2]
 
                 # save graticule
-                np.save(inputpath+"/array"+str(latindex)+str(lonindex),graticule_space)
+                np.save(inputpath+"/array_"+str(latindex)+"_"+str(lonindex),graticule_space)
 
         total_rain.append(total_evap)
 
