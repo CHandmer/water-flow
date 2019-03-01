@@ -272,7 +272,7 @@ def EvolveArray(path, resolution, convergence, steps, precipitation):
         total_rain.append(total_evap)
 
         if i%output_period == 0:
-            print([i, 0.5*np.pi*total_water[-1]/norm_factor, total_flow[-1]/norm_factor, total_rain[-1]/norm_factor, total_water_moment[-1]/total_water[-1]])
+            print([i, 0.5*np.pi*total_water[-1]/norm_factor, total_flow[-1]/norm_factor, total_rain[-1]/norm_factor, total_water_moment[-1]/total_water[-1]], flush=True)
 
 
     

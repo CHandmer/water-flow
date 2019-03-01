@@ -31,10 +31,13 @@ def getVikingRGBvector(array_lat_index, array_lon_index,vikingdata,datadims):
 # Function that computes temperature of a given point
 # Factors altitude, latitude, and local slope
 def getTemp(topo, depth, array_lat_index, array_lon_index):
-    latitude = (90.0-np.cumsum(0.*topo+180.0/(7*topo.shape[0]),axis=0)-(array_lat_index*topo.shape[0])/(7*topo.shape[0])*180.0)[:topo.shape[0]-4,:topo.shape[1]-4]
+    unitres=topo.shape[0]-4
+    latitude = (90.0-np.cumsum(0.*topo[2:-2,2:-2]+180.0/(7*unitres),axis=0)-(array_lat_index*unitres)/(7*unitres)*180.0)
     altitude = (topo+depth)[2:-2,2:-2]
-    angle = np.arctan2((topo+depth)[3:-1,2:-2]-(topo+depth)[1:-3,2:-2],2*21344.0/(14*topo.shape[0]))+latitude
-    temperature = -25.0+45.0*np.cos(np.pi/180*angle)-altitude/200
+    # Discount aspect angle by 0.5 since it is diluted by dawn and dusk.
+    angle = 0.1*180.0/np.pi*np.arctan2((topo+depth)[3:-1,2:-2]-(topo+depth)[1:-3,2:-2],2*21344.0/(14*topo.shape[0]))+latitude
+    # Decrease lapse rate to compensate for Mars' topographic variation. Increase peak average temp to 35C.
+    temperature = -25.0+60.0*np.cos(np.pi/180*angle)-altitude/400
     return temperature
 
 # PNG writer helper function
@@ -44,14 +47,20 @@ def writeRGBArrayToPNG(filename,array):
 def writeRGBArrayToJPG(filename,array):
     Image.fromarray((255*array).astype('uint8')).save(filename+".jpg")
 
+def HSV2RGBhelper(outputarray, inputarray, mask):
+    # Loop through by rows to save memory issue.
+    for i in range(len(outputarray)):
+        outputarray[i] += mask[i,:,np.newaxis]*cl.hsv_to_rgb(inputarray[i])
+    #return cl.hsv_to_rgb(array)
+
 # terrain renderer
 # Depth data is plotted logarithmically.
 # ocean 10**0-10**4
 # greenery 10**-4 - 10**-2
 # dry 10**-10 - 10**-9
-def renderTerrain(topo,depth,vikingRGB):
-    temp = getTemp(topo,depth,3,6)#-30.0
-    logdepth = np.log10(depth[2:-2,2:-2])
+def renderTerrain(topo,depth,vikingRGB,lati,loni):
+    temp = getTemp(topo,depth,lati,loni)#-30.0
+    logdepth = np.log10(depth[2:-2,2:-2]+np.finfo(float).eps)
     #gradientsigmoid = 0.5+0.5*np.tanh((np.diff(topo+depth,axis=0)[1:-2,2:-2]**2+np.diff(topo+depth,axis=1)[2:-2,1:-2]**2)**0.5-50.0)
     # There are five broad states: ice, rock, grass, forest, oceans
     # The transitions are more-or-less well defined.
@@ -60,22 +69,48 @@ def renderTerrain(topo,depth,vikingRGB):
     rock = 0.5-0.5*3*(logdepth+3.7)/np.sqrt(1.0+3.0**2*(logdepth+3.7)**2)
     ice = np.round((0.5-0.5*np.sign(temp+5)))*(1-rock) # hard transition below -5C, smoothing to rock
     ocean = np.round(0.5+0.5*np.sign(logdepth+1))*(1-ice) # hard transition above 10cm.
-    forest = (0.5+0.5*8*(logdepth+3.02)/np.sqrt(1.0+8.0**2*(logdepth+3.02)**2))*(0.5+0.5*1*(temp+3.5)/np.sqrt(1.0+1.0**2*(temp+3.5)**2))*(1-ocean)
+    forest = (0.5+0.5*8*(logdepth+3.0)/np.sqrt(1.0+8.0**2*(logdepth+3.0)**2))*(0.5+0.5*1*(temp+3.5)/np.sqrt(1.0+1.0**2*(temp+3.5)**2))*(1-ocean)
     grass = np.maximum(1.0-ocean-rock-ice-forest,0.0)
 
+    #Make tundra redder. Cut trees off in the hottest areas?
+    
     # specify color functions, either arrays or scalars
-    rock_color = vikingRGB
+    #rock_color = vikingRGB
+    #output = rock[:,:,np.newaxis]*rock_color
+    output = rock[:,:,np.newaxis]*vikingRGB
+    #print(np.sum(output))
+    del rock#, rock_color
     ice_color = 0.9*np.array([1.0,1.0,1.0])
+    output += ice[:,:,np.newaxis]*ice_color
+    #print(np.sum(output))
+    del ice, ice_color
     ocean_depth = np.minimum(10.0**logdepth,10.0)#+0*8.*gradientsigmoid,10.0)
-    ocean_color = cl.hsv_to_rgb(np.transpose([temp*0.0+0.56,0.25+0.16*ocean_depth-0.011*ocean_depth**2,0.97-0.022*ocean_depth-0.006*ocean_depth**2],axes=[1,2,0]))
+    del logdepth
+    #ocean_color = cl.hsv_to_rgb(np.stack([temp*0.0+0.56,0.3+0.15*ocean_depth-0.011*ocean_depth**2,0.8-0.02*ocean_depth-0.004*ocean_depth**2],axis=-1))
+    ocean_color_hsv = np.stack([temp*0.0+0.56,0.3+0.15*ocean_depth-0.011*ocean_depth**2,0.8-0.02*ocean_depth-0.004*ocean_depth**2],axis=-1)
+    HSV2RGBhelper(output,ocean_color_hsv,ocean)
+    #print(np.sum(output))
+    #output += ocean[:,:,np.newaxis]*ocean_color
+    del ocean, ocean_color_hsv
     forest_depth = np.minimum(ocean_depth,0.01)
-    forest_color = cl.hsv_to_rgb(np.transpose([temp*0.0+0.23,(30-temp)/700.+0.44+45.0*forest_depth,-(30-temp)/800.+temp*0.0+0.22],axes=[1,2,0]))
+    forest_color_hsv = np.stack([temp*0.0+0.23,(30-temp)/700.+0.44+45.0*forest_depth,-(30-temp)/800.+temp*0.0+0.22],axis=-1)
+    HSV2RGBhelper(output,forest_color_hsv,forest)
+    #print(np.sum(output))
+    #output += forest[:,:,np.newaxis]*forest_color
+    del forest, forest_color_hsv
     grass_depth = np.minimum(ocean_depth,0.0003)
-    grass_color = cl.hsv_to_rgb(np.transpose([-(30-temp)/400.+0.23,-(30-temp)/400.+0.48+624.4*grass_depth+433000.*grass_depth**2,temp*0.0+0.4],axes=[1,2,0]))
+    del ocean_depth
+    grass_color_hsv = np.stack([-(30-temp)/400.+0.23,-(30-temp)/400.+0.48+624.4*grass_depth+433000.*grass_depth**2,temp*0.0+0.4],axis=-1)
+    del grass_depth
+    HSV2RGBhelper(output,grass_color_hsv,grass)
+    #print(np.sum(output))
+    #output += grass[:,:,np.newaxis]*grass_color
+    del grass, grass_color_hsv
 
-    output = rock[:,:,np.newaxis]*rock_color + ice[:,:,np.newaxis]*ice_color + ocean[:,:,np.newaxis]*ocean_color + forest[:,:,np.newaxis]*forest_color + grass[:,:,np.newaxis]*grass_color
+    #output = rock[:,:,np.newaxis]*rock_color + ice[:,:,np.newaxis]*ice_color + ocean[:,:,np.newaxis]*ocean_color + forest[:,:,np.newaxis]*forest_color + grass[:,:,np.newaxis]*grass_color
     # add randomness
     output += 0.05*np.random.rand(output.shape[0],output.shape[1],output.shape[2])-0.025
+    #print(np.sum(output))
     return output
  
 def reliefTransform(grad):
@@ -87,27 +122,49 @@ def addRelief(topodepth,RGBarray,angle):
     gradEW = reliefTransform(np.diff(topodepth,axis=1)[2:-2,1:-2]/(21344.0/(14*topodepth.shape[0])))
     return np.minimum(np.maximum((1.0+(gradNS*np.cos(angle)+gradEW*np.sin(angle))/30.0)[:,:,np.newaxis]*RGBarray,0.0),1.0)
 
-# Specify the subarray
-lati = 3
-loni = 6
+def antiAlias(image):
+    imagesize=image.size
+    return image.resize((2*imagesize[0],2*imagesize[1])).resize(imagesize,resample=Image.ANTIALIAS)
 
-# Get a test batch of data
-data = np.load("array_"+str(lati)+"_"+str(loni)+".npy")
-topo = data[:,:,0]
-depth = data[:,:,2]
+def renderImage(latindex,lonindex):
+    
+    # Specify the subarray
+    lati = latindex
+    loni = lonindex
 
-# Produce the full resolution version of the Viking data
-if(False):
-    viking = Image.open("Mars_Viking_Color.jpg")
-    vikingdata = np.asarray(viking)
-    viking.close()
-    writeRGBArrayToPNG("Viking_"+str(lati)+"_"+str(loni),getVikingRGBvector(lati,loni,vikingdata,topo.shape))
-    del vikingdata
+    # Get a test batch of data
+    print("importing data for lat: " + str(lati) + " and lon: " + str(loni))
+    data = np.load("res7621/array_"+str(lati)+"_"+str(loni)+".npy")
+    topo = data[:,:,0]
+    depth = data[:,:,2]
+    del data
 
-colordata=renderTerrain(topo, depth, np.asarray(Image.open("Viking_"+str(lati)+"_"+str(loni)+".png"))/255.0)
-writeRGBArrayToPNG("render_"+str(lati)+"_"+str(loni),colordata)
-writeRGBArrayToPNG("relief_"+str(lati)+"_"+str(loni),addRelief(topo,colordata,0.25*np.pi))
+    # Produce the full resolution version of the Viking data
+    if(True):
+        print("producing the viking data map")
+        viking = Image.open("Mars_Viking_Color.jpg")
+        vikingdata = np.asarray(viking)
+        viking.close()
+        writeRGBArrayToPNG("renders/Viking_"+str(lati)+"_"+str(loni),getVikingRGBvector(lati,loni,vikingdata,topo.shape))
+        del vikingdata
 
-if(False):
-    writeRGBArrayToJPG("render_"+str(lati)+"_"+str(loni),colordata)
-    writeRGBArrayToJPG("relief_"+str(lati)+"_"+str(loni),addRelief(topo,colordata,0.25*np.pi))
+    print("producing color data for render")
+    colordata=renderTerrain(topo, depth, np.asarray(Image.open("renders/Viking_"+str(lati)+"_"+str(loni)+".png"))/255.0,lati,loni)
+    print("saving images")
+    writeRGBArrayToPNG("renders/render_"+str(lati)+"_"+str(loni),colordata)
+    writeRGBArrayToPNG("renders/relief_"+str(lati)+"_"+str(loni),addRelief(topo,colordata,0.25*np.pi))
+    antiAlias(Image.open("renders/relief_"+str(lati)+"_"+str(loni)+".png")).save("renders/relief_"+str(lati)+"_"+str(loni)+"_aa.png")
+
+    if(True):
+        print("saving jpgs")
+        writeRGBArrayToJPG("renders/render_"+str(lati)+"_"+str(loni),colordata)
+        writeRGBArrayToJPG("renders/relief_"+str(lati)+"_"+str(loni),addRelief(topo,colordata,0.25*np.pi))
+        antiAlias(Image.open("renders/relief_"+str(lati)+"_"+str(loni)+".png")).save("renders/relief_"+str(lati)+"_"+str(loni)+"_aa.jpg")
+
+
+for i in range(7):
+    for j in range(14):
+        renderImage(i,j)
+
+#renderImage(2,1)
+

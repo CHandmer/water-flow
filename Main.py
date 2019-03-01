@@ -28,7 +28,10 @@ InitializeArrayFunction.InitializeArrays(localpath,60,global_equivalent_depth)
 EvolveArrayFunction.EvolveArray(localpath, 60, 0.0001, 10000, precipitation_per_step)
 
 # Do the rest of the resolutions
+maxsteps=10000
 for i in range(8):
     res = int(np.round(7621/2**(7-i)))
     InitializeArrayFunction.InitializeArrays(localpath,res,global_equivalent_depth)
-    EvolveArrayFunction.EvolveArray(localpath, res, 0.0001, 10000, precipitation_per_step)
+    if i==7:
+        maxsteps=10 # This prevents all the water disappearing into gullies in the last step
+    EvolveArrayFunction.EvolveArray(localpath, res, 0.001, maxsteps, precipitation_per_step)
