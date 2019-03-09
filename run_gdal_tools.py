@@ -3,8 +3,8 @@ import os
 pix = 7621
 deg = 25.714
 
-outputdir = "gdal_dir"
-outputname = "terraformed_7621_aa"
+outputdir = "gdal_dir_2nd_version"
+outputname = "terraformed_7621_aa_tundra"
 
 os.system("mkdir "+outputdir)
 os.system("mkdir "+outputdir+"2")
@@ -27,7 +27,7 @@ for i in range(14):
 os.system("gdalbuildvrt "+outputname+".vrt "+outputdir+"2/*.vrt")
 
 # gdal2tiles generates a directory + out.kml file for a superoverlay compatible with google earth
-os.system("gdal2tiles.py -p geodetic -k "+outputname+".vrt")
+os.system("gdal2tiles.py -p geodetic -k -z 0-9 "+outputname+".vrt")
 
 # Admire the size of your dir
 os.system("du -hs "+outputname)
