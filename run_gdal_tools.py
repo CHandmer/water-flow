@@ -3,8 +3,8 @@ import os
 pix = 7621
 deg = 25.714
 
-outputdir = "gdal_dir_2nd_version"
-outputname = "terraformed_7621_aa_tundra"
+outputdir = "gdal_dir"
+outputname = "terraformed_7621_aa_dry"
 
 os.system("mkdir "+outputdir)
 os.system("mkdir "+outputdir+"2")

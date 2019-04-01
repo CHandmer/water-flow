@@ -75,11 +75,15 @@ def renderTerrain(topo,depth,vikingRGB,lati,loni):
 #    forest = (0.5+0.5*8*(logdepth+3.0)/np.sqrt(1.0+8.0**2*(logdepth+3.0)**2))*(0.5+0.5*1*(temp+3.5)/np.sqrt(1.0+1.0**2*(temp+3.5)**2))*(1-ocean)
 #    grass = np.maximum(1.0-ocean-rock-ice-forest,0.0)
 
+# transitions
+    rockgrass = 4.8 #3.7   #soggy # Somewhere below the flat spot
+    grasstree = 4.6 #2.85  #soggy # This is where the histogram has the big flat spot
+
 # New definitions
-    rock = 0.5-0.5*3*(logdepth+3.7)/np.sqrt(1.0+3.0**2*(logdepth+3.7)**2)
+    rock = 0.5-0.5*3*(logdepth+rockgrass)/np.sqrt(1.0+3.0**2*(logdepth+rockgrass)**2)
     ice = np.round((0.5-0.5*np.sign(temp+5)))*(1-rock) # hard transition below -5C, smoothing to rock
     ocean = np.round(0.5+0.5*np.sign(logdepth+1))*(1-ice) # hard transition above 10cm.
-    forest = (0.5+0.5*8*(logdepth+2.85)/np.sqrt(1.0+8.0**2*(logdepth+2.85)**2))*(0.5+0.5*1*(temp+1.5)/np.sqrt(1.0+1.0**2*(temp+1.5)**2))*(1-ocean)
+    forest = (0.5+0.5*8*(logdepth+grasstree)/np.sqrt(1.0+8.0**2*(logdepth+grasstree)**2))*(0.5+0.5*1*(temp+1.5)/np.sqrt(1.0+1.0**2*(temp+1.5)**2))*(1-ocean)
     grass = np.maximum(1.0-ocean-rock-ice-forest,0.0)
 
     #Make tundra redder. Cut trees off in the hottest areas?
@@ -149,7 +153,7 @@ def renderImage(latindex,lonindex):
         del vikingdata
 
     print("producing color data for render")
-    colordata=renderTerrain2(topo, depth, np.asarray(Image.open("renders/Viking_"+str(lati)+"_"+str(loni)+".png"))/255.0,lati,loni)
+    colordata=renderTerrain(topo, depth, np.asarray(Image.open("renders/Viking_"+str(lati)+"_"+str(loni)+".png"))/255.0,lati,loni)
     print("saving images")
     writeRGBArrayToPNG("renders/render_"+str(lati)+"_"+str(loni),colordata)
     writeRGBArrayToPNG("renders/relief_"+str(lati)+"_"+str(loni),addRelief(topo,colordata,0.25*np.pi))
@@ -162,11 +166,10 @@ def renderImage(latindex,lonindex):
         antiAlias(Image.open("renders/relief_"+str(lati)+"_"+str(loni)+".png")).save("renders/relief_"+str(lati)+"_"+str(loni)+"_aa.jpg")
 
 
-#for i in range(7):
-#    for j in range(14):
-#        renderImage(i,j)
+for i in range(7):
+    for j in range(14):
+        renderImage(i,j)
 
-renderImage(3,6)
 #renderImage(2,1)
 
 #This is a toy function that produces an image of the colormap as a function of temp and depth.
