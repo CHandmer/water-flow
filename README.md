@@ -10,6 +10,7 @@ System requirements:
 \>8 gigs of ram.
 \>At least one processor.
 
+For the HRSC dataset, need more like 600 gigs minimum. 
 
 Instructions for use:
 
@@ -21,12 +22,23 @@ Instructions for use:
 - Run main with python 3. This will create subdirectories in which to save preliminary results, and then sequentially run the water flow simulation at higher and higher frequencies. On my c. 2011 laptop, it took about 3 days to run the whole thing. 
 - When the data is run, use PlotArrays.py to generate and save pngs of each of 32 subsections of the planet, then assemble them/print them as you see fit. Experimentation on plotting the rich dataset is encouraged, and several demo color maps are given.
 
+## Update April 2019
+- use downloadbigfile script to download the raw topo data
+- use Main.py to solve global hydrology. Change parameters first if you want.
+- use compressdata.py to throw away irrelevant parts of solution.
+- use readarray.py (?) to produce a powerlaw graph of global depth functions, and use these numbers to calibrate the grass and desert cutoffs in render.py
+- mkdir render and copy the pre-cut Viking images to it, or if running for the first time, change viking flag in render.py from False to True. This will take a while.
+- render a few tiles first to check calibration. Then run render.py.
+- use run_gdal_tools.py to convert the renders to a superoverlay.
+
 
 Future (unscheduled) planned improvements
-- Increase resolution using HRSC dataset: https://astrogeology.usgs.gov/search/map/Mars/Topography/HRSC_MOLA_Blend/Mars_HRSC_MOLA_BlendDEM_Global_200mp_v2
-- Improve precipitation model to include prevailing wind direction and snow.
-- Provide a temperature sensitive vegetation model in a plot option. 
+DONE - Increase resolution using HRSC dataset: https://astrogeology.usgs.gov/search/map/Mars/Topography/HRSC_MOLA_Blend/Mars_HRSC_MOLA_BlendDEM_Global_200mp_v2
+DONE - Snow
+- Improve precipitation model to include prevailing wind direction.
+DONE - Provide a temperature sensitive vegetation model in a plot option. 
 - Develop an erosion model.
+
 Latest blog: https://caseyhandmer.wordpress.com/2018/11/29/mars-global-hydrology-at-full-mola-resolution/ 
 
 

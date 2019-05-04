@@ -8,7 +8,7 @@ localpath = "./"
 global_equivalent_depth = 50 #120 #150 # Perhaps 50m is closer to the truth?
 # I want to adjust this so peak precip is 1/50th of 0.0015, and scales with resolution.
 #precipitation_per_step = 0.0015 # This might be a bit high, not sure yet.
-precipitation_per_step = 0.004 # This might be a bit high, not sure yet.
+precipitation_per_step = 0.0004 # This might be a bit high, not sure yet.
 # Given that more steps are required to flow a given distance at higher resolution, a conservative approach would be to reduce precipitation_per_step as resolution increases. I have decided not to because, given rather coarse resolution, increasing rainfall as time goes on tends to fully charge and render visible the tiny tributaries, making the map more interesting.
 
 # Nothing under here gets changed! Hahaha.

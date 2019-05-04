@@ -4,7 +4,7 @@ pix = 7621
 deg = 25.714
 
 outputdir = "gdal_dir"
-outputname = "terraformed_7621_aa_dry"
+outputname = "terraformed_7621_aa_drier"
 
 os.system("mkdir "+outputdir)
 os.system("mkdir "+outputdir+"2")

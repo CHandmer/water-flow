@@ -76,8 +76,8 @@ def renderTerrain(topo,depth,vikingRGB,lati,loni):
 #    grass = np.maximum(1.0-ocean-rock-ice-forest,0.0)
 
 # transitions
-    rockgrass = 4.8 #3.7   #soggy # Somewhere below the flat spot
-    grasstree = 4.6 #2.85  #soggy # This is where the histogram has the big flat spot
+    rockgrass = 5.7 #4.8 # dry #3.7   #soggy # Somewhere below the flat spot
+    grasstree = 5.55 #4.6 # dry #2.85  #soggy # This is where the histogram has the big flat spot
 
 # New definitions
     rock = 0.5-0.5*3*(logdepth+rockgrass)/np.sqrt(1.0+3.0**2*(logdepth+rockgrass)**2)
@@ -170,7 +170,7 @@ for i in range(7):
     for j in range(14):
         renderImage(i,j)
 
-#renderImage(2,1)
+#renderImage(5,10)
 
 #This is a toy function that produces an image of the colormap as a function of temp and depth.
 def colorMap(pix):
